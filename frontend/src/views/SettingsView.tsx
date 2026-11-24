@@ -265,7 +265,7 @@ export function SettingsView({ config, onUpdated, onToast, onReopenOnboarding }:
         <div className="head-left">
           <h1 className="page-title">系统设置</h1>
           <p className="page-subtitle">
-            集中配置系统用到的全部 18 项运行环境变量，保存后立即更新运行态并持久化同步至 <span className="mono">backend/.env</span>
+            集中配置系统用到的全部 19 项运行环境变量，保存后立即更新运行态并持久化同步至 <span className="mono">backend/.env</span>
           </p>
         </div>
         <div className="head-right">
@@ -608,105 +608,105 @@ export function SettingsView({ config, onUpdated, onToast, onReopenOnboarding }:
                 </div>
               </div>
 
-              <div className="settings-grid-2">
-                <div className="env-field">
-                  <div className="env-field-head">
-                    <label>火山引擎 Access Key ID</label>
-                    <div className="env-head-actions">
-                      {config?.has_volc_ak && !clearKeys.includes('volc_access_key_id') && (
-                        <span className="secret-saved-badge mono">{config.volc_access_key_id_masked}</span>
-                      )}
-                      <span className="env-key-chip mono">VOLC_ACCESS_KEY_ID</span>
-                    </div>
-                  </div>
-                  <div className="secret-input-row">
-                    <input
-                      name="VOLC_ACCESS_KEY_ID"
-                      type={showSecrets.volc_access_key_id ? 'text' : 'password'}
-                      className="env-input mono"
-                      placeholder={
-                        clearKeys.includes('volc_access_key_id')
-                          ? '保存后将清空 AK'
-                          : config?.has_volc_ak
-                            ? `已保存 (${config.volc_access_key_id_masked})，留空不变`
-                            : '输入具备 TOS 读写权限的 AKLT...'
-                      }
-                      value={volcAk}
-                      onChange={(e) => {
-                        setVolcAk(e.target.value);
-                        if (e.target.value.trim()) {
-                          setClearKeys((prev) => prev.filter((k) => k !== 'volc_access_key_id'));
-                        }
-                      }}
-                      autoComplete="off"
-                    />
-                    <button
-                      type="button"
-                      className="btn btn-ghost btn-sm"
-                      onClick={() => setShowSecrets((s) => ({ ...s, volc_access_key_id: !s.volc_access_key_id }))}
-                    >
-                      {showSecrets.volc_access_key_id ? '隐藏' : '显示'}
-                    </button>
-                    {config?.has_volc_ak && (
-                      <button
-                        type="button"
-                        className="btn btn-danger btn-sm"
-                        onClick={() => toggleClearSecret('volc_access_key_id')}
-                      >
-                        {clearKeys.includes('volc_access_key_id') ? '取消' : '清除'}
-                      </button>
+              <div className="env-field">
+                <div className="env-field-head">
+                  <label>火山引擎 Access Key ID</label>
+                  <div className="env-head-actions">
+                    {config?.has_volc_ak && !clearKeys.includes('volc_access_key_id') && (
+                      <span className="secret-saved-badge mono">当前已存: {config.volc_access_key_id_masked}</span>
                     )}
+                    {clearKeys.includes('volc_access_key_id') && <span className="secret-clear-badge">保存后将清空 AK</span>}
+                    <span className="env-key-chip mono">VOLC_ACCESS_KEY_ID</span>
                   </div>
                 </div>
-
-                <div className="env-field">
-                  <div className="env-field-head">
-                    <label>火山引擎 Access Key Secret</label>
-                    <div className="env-head-actions">
-                      {config?.has_volc_sk && !clearKeys.includes('volc_access_key_secret') && (
-                        <span className="secret-saved-badge mono">{config.volc_access_key_secret_masked}</span>
-                      )}
-                      <span className="env-key-chip mono">VOLC_ACCESS_KEY_SECRET</span>
-                    </div>
-                  </div>
-                  <div className="secret-input-row">
-                    <input
-                      name="VOLC_ACCESS_KEY_SECRET"
-                      type={showSecrets.volc_access_key_secret ? 'text' : 'password'}
-                      className="env-input mono"
-                      placeholder={
-                        clearKeys.includes('volc_access_key_secret')
-                          ? '保存后将清空 SK'
-                          : config?.has_volc_sk
-                            ? `已保存 (${config.volc_access_key_secret_masked})，留空不变`
-                            : '输入对应的 Secret Key'
+                <div className="secret-input-row">
+                  <input
+                    name="VOLC_ACCESS_KEY_ID"
+                    type={showSecrets.volc_access_key_id ? 'text' : 'password'}
+                    className="env-input mono"
+                    placeholder={
+                      clearKeys.includes('volc_access_key_id')
+                        ? '已标记清空，直接输入新 AK 可重新设置'
+                        : config?.has_volc_ak
+                          ? `已保存 (${config.volc_access_key_id_masked})，留空保持不变，输入新值即覆盖`
+                          : '输入具备 TOS 桶读写权限的火山引擎 Access Key ID (AKLT...)'
+                    }
+                    value={volcAk}
+                    onChange={(e) => {
+                      setVolcAk(e.target.value);
+                      if (e.target.value.trim()) {
+                        setClearKeys((prev) => prev.filter((k) => k !== 'volc_access_key_id'));
                       }
-                      value={volcSk}
-                      onChange={(e) => {
-                        setVolcSk(e.target.value);
-                        if (e.target.value.trim()) {
-                          setClearKeys((prev) => prev.filter((k) => k !== 'volc_access_key_secret'));
-                        }
-                      }}
-                      autoComplete="off"
-                    />
+                    }}
+                    autoComplete="off"
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => setShowSecrets((s) => ({ ...s, volc_access_key_id: !s.volc_access_key_id }))}
+                  >
+                    {showSecrets.volc_access_key_id ? '隐藏' : '显示'}
+                  </button>
+                  {config?.has_volc_ak && (
                     <button
                       type="button"
-                      className="btn btn-ghost btn-sm"
-                      onClick={() => setShowSecrets((s) => ({ ...s, volc_access_key_secret: !s.volc_access_key_secret }))}
+                      className="btn btn-danger btn-sm"
+                      onClick={() => toggleClearSecret('volc_access_key_id')}
                     >
-                      {showSecrets.volc_access_key_secret ? '隐藏' : '显示'}
+                      {clearKeys.includes('volc_access_key_id') ? '取消清空' : '清除密钥'}
                     </button>
-                    {config?.has_volc_sk && (
-                      <button
-                        type="button"
-                        className="btn btn-danger btn-sm"
-                        onClick={() => toggleClearSecret('volc_access_key_secret')}
-                      >
-                        {clearKeys.includes('volc_access_key_secret') ? '取消' : '清除'}
-                      </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="env-field">
+                <div className="env-field-head">
+                  <label>火山引擎 Access Key Secret</label>
+                  <div className="env-head-actions">
+                    {config?.has_volc_sk && !clearKeys.includes('volc_access_key_secret') && (
+                      <span className="secret-saved-badge mono">当前已存: {config.volc_access_key_secret_masked}</span>
                     )}
+                    {clearKeys.includes('volc_access_key_secret') && <span className="secret-clear-badge">保存后将清空 SK</span>}
+                    <span className="env-key-chip mono">VOLC_ACCESS_KEY_SECRET</span>
                   </div>
+                </div>
+                <div className="secret-input-row">
+                  <input
+                    name="VOLC_ACCESS_KEY_SECRET"
+                    type={showSecrets.volc_access_key_secret ? 'text' : 'password'}
+                    className="env-input mono"
+                    placeholder={
+                      clearKeys.includes('volc_access_key_secret')
+                        ? '已标记清空，直接输入新 SK 可重新设置'
+                        : config?.has_volc_sk
+                          ? `已保存 (${config.volc_access_key_secret_masked})，留空保持不变，输入新值即覆盖`
+                          : '输入对应的火山引擎 Access Key Secret'
+                    }
+                    value={volcSk}
+                    onChange={(e) => {
+                      setVolcSk(e.target.value);
+                      if (e.target.value.trim()) {
+                        setClearKeys((prev) => prev.filter((k) => k !== 'volc_access_key_secret'));
+                      }
+                    }}
+                    autoComplete="off"
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => setShowSecrets((s) => ({ ...s, volc_access_key_secret: !s.volc_access_key_secret }))}
+                  >
+                    {showSecrets.volc_access_key_secret ? '隐藏' : '显示'}
+                  </button>
+                  {config?.has_volc_sk && (
+                    <button
+                      type="button"
+                      className="btn btn-danger btn-sm"
+                      onClick={() => toggleClearSecret('volc_access_key_secret')}
+                    >
+                      {clearKeys.includes('volc_access_key_secret') ? '取消清空' : '清除密钥'}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
