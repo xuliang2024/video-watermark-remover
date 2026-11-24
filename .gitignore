@@ -1,0 +1,62 @@
+# macOS / OS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# AI / IDE / Editor
+.workbuddy/
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# Python / Backend
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+*.egg-info/
+
+# Runtime Storage & Databases
+backend/storage/
+*.db
+*.sqlite
+*.sqlite3
+
+# Frontend / Node
+node_modules/
+frontend/node_modules/
+frontend/dist/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.vite/
+
+# Design Exports & Raw Uncropped Assets
+export/
+assets/Cinematic_film_still_*.png
+
+# Logs & Temp
+*.log
+tmp/
+temp/

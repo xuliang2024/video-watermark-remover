@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>净影 CleanFrame — 批量视频无痕去水印与多语翻译工作台</title>
+  <link rel="stylesheet" href="./css/tokens.css" />
+  <link rel="stylesheet" href="./css/landing.css" />
+</head>
+<body>
+  <!-- 顶部粘性导航（右上角：进入工作台） -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="site-brand" href="#">
+        <svg width="28" height="28" viewBox="0 0 26 26" fill="none">
+          <rect x="1.6" y="5.2" width="16" height="15.6" rx="4.2" stroke="#4CE0A5" stroke-width="1.5"/>
+          <path d="M6.2 10h6.6M6.2 13.6h4.6" stroke="#4CE0A5" stroke-width="1.4" stroke-linecap="round" opacity="0.55"/>
+          <path d="M19.4 12.6l1.1 2.9 2.9 1.1-2.9 1.1-1.1 2.9-1.1-2.9-2.9-1.1 2.9-1.1z" fill="#4CE0A5"/>
+        </svg>
+        <div class="brand-text">
+          <span class="brand-name">净影</span>
+          <span class="brand-sub">CLEANFRAME</span>
+        </div>
+      </a>
+
+      <nav class="header-nav" aria-label="页面导航">
+        <a href="#workflow">工作流</a>
+        <a href="#features">核心能力</a>
+        <a href="#scenarios">应用场景</a>
+        <a href="#pricing">按量计费</a>
+        <a href="#faq">常见问题</a>
+      </nav>
+
+      <div class="header-actions">
+        <a class="btn-link-subtle" href="./workspace.html#inpaint">批量去水印</a>
+        <a class="btn-link-subtle" href="./workspace.html#translate">多语翻译</a>
+        <a class="btn btn-primary" href="./workspace.html">
+          <span>进入工作台</span>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M2.8 7h8.4M7.8 3.6L11.2 7l-3.4 3.4" stroke="#06231A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero 首屏：宣言 + 可实时拖动交互对比舞台 -->
+  <section class="hero-backdrop">
+    <div class="container hero">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        <span>视频修复 + 多语翻译一体化工作台 · 支持最高 4K / 3 小时</span>
+      </div>
+
+      <h1 class="hero-title">
+        整季视频无痕去水印，<br />
+        一键交付 <span class="accent-word">31 语种成片</span>
+      </h1>
+
+      <p class="hero-sub">
+        本地批量上传整季短剧、课程或宣传片，一套方案统一擦除角标、台标与硬字幕，按需复刻原说话人音色并烧录多语字幕——告别逐集遮罩和反复导出，当天即可全球分发。
+      </p>
+
+      <div class="hero-ctas">
+        <a class="btn btn-primary btn-lg" href="./workspace.html">
+          <span>立即进入工作台</span>
+          <svg width="15" height="15" viewBox="0 0 14 14" fill="none">
+            <path d="M2.8 7h8.4M7.8 3.6L11.2 7l-3.4 3.4" stroke="#06231A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+        <a class="btn btn-ghost btn-lg" href="#pricing">在线试算处理成本</a>
+      </div>
+
+      <div class="hero-specs">
+        <span>
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2.4 7.3l3.1 3 6.1-6.4" stroke="#4CE0A5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          本地多选 / 整文件夹拖拽，单次 200 文件
+        </span>
+        <span>
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2.4 7.3l3.1 3 6.1-6.4" stroke="#4CE0A5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          100% 保留原始音频
+        </span>
+        <span>
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2.4 7.3l3.1 3 6.1-6.4" stroke="#4CE0A5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          纯按量计费，提交前透明预估
+        </span>
+      </div>
+
+      <!-- 首屏交互式效果预览台 -->
+      <div class="hero-stage-wrap">
+        <div class="stage-chrome">
+          <div class="stage-file-meta">
+            <span class="stage-rec-dot"></span>
+            <span>S01E01_雨夜来客.mp4 · 1920×1080 · 29.97fps</span>
+          </div>
+
+          <div class="stage-mode-tabs" role="tablist" aria-label="效果预览模式">
+            <button class="stage-tab active" data-hero-mode="wipe">擦除对比（去水印）</button>
+            <button class="stage-tab" data-hero-mode="en-US">en-US 英语成片</button>
+            <button class="stage-tab" data-hero-mode="ja-JP">ja-JP 日语成片</button>
+            <button class="stage-tab" data-hero-mode="ko-KR">ko-KR 韩语成片</button>
+          </div>
+
+          <a class="stage-open-link" id="heroOpenWorkspaceLink" href="./workspace.html#compare">在工作台查看对比 ↗</a>
+        </div>
+
+        <div class="hero-compare" id="heroCompare" aria-label="可左右拖动对比去水印效果">
+          <!-- 无痕修复底图 -->
+          <div class="hero-layer">
+            <img src="./assets/frame_16x9.png" alt="无痕修复后视频画面" />
+          </div>
+
+          <!-- 原片层（含剧集角标、台标与硬字幕，由滑块实时裁切） -->
+          <div class="hero-layer hero-before-layer" id="heroBeforeLayer">
+            <img src="./assets/frame_16x9.png" alt="含水印与字幕原片" />
+            <div class="hero-drama-tag">第 01 集 · 雨夜来客</div>
+            <div class="hero-watermark-badge">
+              <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
+                <path d="M4.5 0.6l1.1 2.7 2.7 1.2-2.7 1.2L4.5 8.4 3.4 5.7 0.7 4.5l2.7-1.2z" fill="#FFFFFF" opacity="0.92"/>
+              </svg>
+              <span>星野视频</span>
+            </div>
+            <div class="hero-orig-subtitle">我不会再等你了</div>
+          </div>
+
+          <!-- 多语成片叠加层（切换至 en-US / ja-JP / ko-KR 时展示） -->
+          <div class="hero-translated-overlay" id="heroTranslatedOverlay">
+            <div class="hero-dub-pill">
+              <span class="sound-bars"><i></i><i></i><i></i><i></i></span>
+              <span id="heroDubBadgeText">en-US 英语配音 · 音色 1:1 复刻</span>
+            </div>
+            <div class="hero-burned-caption" id="heroBurnedCaption">I won't wait for you anymore.</div>
+          </div>
+
+          <div class="hero-divider" id="heroDivider"></div>
+          <div class="hero-handle" id="heroHandle">
+            <svg width="16" height="14" viewBox="0 0 16 14" fill="none">
+              <path d="M5.6 4L2.4 7l3.2 3" stroke="#06231A" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M10.4 4L13.6 7l-3.2 3" stroke="#06231A" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+
+          <span class="stage-pill before">原片 · 含角标 / 剧集信息 / 硬字幕</span>
+          <span class="stage-pill after">无痕修复后</span>
+        </div>
+
+        <div class="stage-footer-bar">
+          <span class="stage-footer-hint">
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+              <circle cx="7" cy="7" r="5.6" stroke="#4CE0A5" stroke-width="1.2"/>
+              <path d="M7 6.2v3.4" stroke="#4CE0A5" stroke-width="1.3" stroke-linecap="round"/>
+              <circle cx="7" cy="4.2" r="0.7" fill="#4CE0A5"/>
+            </svg>
+            <span id="heroStageHint">左右拖动中间白色手柄，核验顶部角标与底部硬字幕的无痕擦除效果</span>
+          </span>
+          <span class="mono" style="font-size:10.5px;color:var(--text-dim);">北京 / 上海 / 广州三地域可用</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 指标背书条 -->
+  <section class="metrics-section">
+    <div class="container metrics-grid">
+      <div class="metric-item">
+        <div class="metric-num">4K <span>/</span> 3h</div>
+        <div class="metric-desc">单文件最高支持 10 GB、4K 超清与 3 小时修复（纯翻译最长 4 小时）</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-num"><span>31</span> 语种</div>
+        <div class="metric-desc">支持 25 种源语自动识别、31 种目标配音与专属语种字体烧录</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-num"><span>10</span> 并发</div>
+        <div class="metric-desc">600 RPM 调度吞吐，整季剧集多语种任务并行自动编排轮询</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-num">¥<span>0.5</span>/分起</div>
+        <div class="metric-desc">按实际用量每小时出账，提交前精确显示帧率与分辨率折算明细</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 1: 3 步批量工作流 -->
+  <section class="section" id="workflow">
+    <div class="container">
+      <div class="section-head">
+        <span class="section-eyebrow">WORKFLOW</span>
+        <h2 class="section-title">一条链路跑完「清洗 → 翻译 → 交付」</h2>
+        <p class="section-sub">不需要写脚本或逐条调接口，把整季原始视频拖进工作台，一次提交即可完成去水印和多语种成片产出。</p>
+      </div>
+
+      <div class="steps-grid">
+        <div class="step-card">
+          <div class="step-top">
+            <span class="step-num">STEP 01</span>
+            <a class="step-jump" href="./workspace.html#inpaint">进入上传 ↗</a>
+          </div>
+          <h3 class="step-title">本地批量上传素材</h3>
+          <p class="step-desc">支持多选文件或直接拖入整季文件夹，自动读取每集分辨率、帧率、时长与音轨语种，并即时标记高帧率省费提示。</p>
+          <div class="step-tags">
+            <span class="mini-tag">mp4 / mov / mkv</span>
+            <span class="mini-tag">单批 200 文件</span>
+            <span class="mini-tag">断点续传</span>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-top">
+            <span class="step-num">STEP 02</span>
+            <a class="step-jump" href="./workspace.html#annotate">区域标注 ↗</a>
+          </div>
+          <h3 class="step-title">套用方案或手动框选</h3>
+          <p class="step-desc">按「擦除目标 × 定位方式」一键套用全批；针对片头角标或固定台标，可直接在 1000×1000 归一化画布画框并拖动生效时段。</p>
+          <div class="step-tags">
+            <span class="mini-tag">标准 / 精准 / 手动框选</span>
+            <span class="mini-tag">字幕保护</span>
+            <span class="mini-tag">模板复用</span>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-top">
+            <span class="step-num">STEP 03</span>
+            <a class="step-jump" href="./workspace.html#monitor">批次监控 ↗</a>
+          </div>
+          <h3 class="step-title">队列跟踪与成片核验</h3>
+          <p class="step-desc">自动排队与状态轮询，实时展示单集进度、日志与累计费用；完成后可直接在网页内拖动对比滑块或抽查多语字幕并打包下载。</p>
+          <div class="step-tags">
+            <span class="mini-tag">擦除对比滑块</span>
+            <span class="mini-tag">SRT / ASS / VTT</span>
+            <span class="mini-tag">修复原片共用</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 2: 两大核心能力（交替图文 + 真实工作台高清界面） -->
+  <section class="section alt" id="features">
+    <div class="container">
+      <div class="section-head">
+        <span class="section-eyebrow">CORE CAPABILITIES</span>
+        <h2 class="section-title">两大专业视觉引擎，无缝衔接在同一工作台</h2>
+        <p class="section-sub">既能作为独立的批量去水印与字幕清洗工具使用，也能作为多语种翻译的前处理步骤自动串联，一次交付干净的海外发行成片。</p>
+      </div>
+
+      <div class="features-stack">
+        <!-- Feature 1: 无痕视频修复 -->
+        <div class="feature-row">
+          <div class="feature-copy">
+            <span class="feature-pill">能力一 · 无痕视频修复</span>
+            <h3 class="feature-title">精准识别角标与硬字幕，复杂背景依然自然无痕</h3>
+            <p class="feature-lead">把底层五种检测模式抽象为直观的「擦除目标 + 定位方式」组合，既能全自动清掉动态水印、Logo、滚动字幕与剧集信息，也能手动画框精确控制每一秒。</p>
+            <ul class="feature-list">
+              <li>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#4CE0A5" stroke-width="1.3"/><path d="M5.2 8.2l1.9 1.9 3.8-4.1" stroke="#4CE0A5" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span><strong>极速版 &amp; 专业版按需切换</strong>：对成本敏感的常规字幕走极速版 ¥0.5/分；对画质严苛的角标、花体字走专业版大模型精准识别。</span>
+              </li>
+              <li>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#4CE0A5" stroke-width="1.3"/><path d="M5.2 8.2l1.9 1.9 3.8-4.1" stroke="#4CE0A5" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span><strong>固定区域 + 生效时段时间轴</strong>：片头剧集信息只在 4–40 秒出现？拉出对应时间片即可，其余画面零改动，支持保存模板套用全季。</span>
+              </li>
+              <li>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#4CE0A5" stroke-width="1.3"/><path d="M5.2 8.2l1.9 1.9 3.8-4.1" stroke="#4CE0A5" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span><strong>字幕区域保护与常驻模式</strong>：只擦水印时自动避开底部字幕防止误擦；擦除字幕时开启常驻减少逐帧漏检。</span>
+              </li>
+            </ul>
+            <div style="margin-top:6px;">
+              <a class="btn btn-primary" href="./workspace.html#inpaint">前往新建修复任务 →</a>
+            </div>
+          </div>
+
+          <div class="screen-showcase">
+            <div class="showcase-bar">
+              <div class="showcase-tabs" data-showcase-group="inpaint" data-showcase-img="showcaseInpaintImg" data-showcase-link="showcaseInpaintLink">
+                <button class="showcase-tab active" data-src="./assets/screens/screen-inpaint.png" data-href="./workspace.html#inpaint">02 批量修复配置</button>
+                <button class="showcase-tab" data-src="./assets/screens/screen-annotate.png" data-href="./workspace.html#annotate">03 区域标注与时间轴</button>
+              </div>
+              <a class="stage-open-link" id="showcaseInpaintLink" href="./workspace.html#inpaint">体验此界面 ↗</a>
+            </div>
+            <div class="showcase-frame">
+              <img id="showcaseInpaintImg" src="./assets/screens/screen-inpaint.png" alt="净影新建修复任务工作台界面" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature 2: 多语种视频翻译 -->
+        <div class="feature-row reverse">
+          <div class="screen-showcase">
+            <div class="showcase-bar">
+              <div class="showcase-tabs" data-showcase-group="translate" data-showcase-img="showcaseTranslateImg" data-showcase-link="showcaseTranslateLink">
+                <button class="showcase-tab active" data-src="./assets/screens/screen-result.png" data-href="./workspace.html#translate-result">07 多语成片交付</button>
+                <button class="showcase-tab" data-src="./assets/screens/screen-translate.png" data-href="./workspace.html#translate">06 新建翻译任务</button>
+              </div>
+              <a class="stage-open-link" id="showcaseTranslateLink" href="./workspace.html#translate-result">体验此界面 ↗</a>
+            </div>
+            <div class="showcase-frame">
+              <img id="showcaseTranslateImg" src="./assets/screens/screen-result.png" alt="净影多语成片结果界面" />
+            </div>
+          </div>
+
+          <div class="feature-copy">
+            <span class="feature-pill blue">能力二 · 多语翻译与配音</span>
+            <h3 class="feature-title">1:1 复刻原说话人音色，一次提交产出多国成片</h3>
+            <p class="feature-lead">勾选「先去水印再翻译」，工作台会自动先生成无字幕洁净底片，再并行渲染英、日、韩、西、印尼等 31 种目标语言的配音视频与多格式字幕。</p>
+            <ul class="feature-list">
+              <li>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#5B9BFF" stroke-width="1.3"/><path d="M5.2 8.2l1.9 1.9 3.8-4.1" stroke="#5B9BFF" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span><strong>三种配音模式 + 动态时长</strong>：支持情感复刻、音色还原与高质量配音；开启动态时长自动微调画面节奏对齐译后语速。</span>
+              </li>
+              <li>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#5B9BFF" stroke-width="1.3"/><path d="M5.2 8.2l1.9 1.9 3.8-4.1" stroke="#5B9BFF" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span><strong>精细字幕烧录与样式库</strong>：自由控制字号、描边、动态背景与位置，自动匹配各语种专属字体，并导出 .srt / .ass / .vtt 等 5 种格式。</span>
+              </li>
+              <li>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#5B9BFF" stroke-width="1.3"/><path d="M5.2 8.2l1.9 1.9 3.8-4.1" stroke="#5B9BFF" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span><strong>修复原片共用交付</strong>：一次擦除生成的干净母带由全部语种复用，并作为独立成片返回下载，不重复扣费。</span>
+              </li>
+            </ul>
+            <div style="margin-top:6px;">
+              <a class="btn btn-ghost" href="./workspace.html#translate">前往新建翻译任务 →</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 3: 适用场景与能力矩阵 -->
+  <section class="section" id="scenarios">
+    <div class="container">
+      <div class="section-head">
+        <span class="section-eyebrow">USE CASES &amp; SPECS</span>
+        <h2 class="section-title">为高频批量视频生产团队打造</h2>
+        <p class="section-sub">覆盖短剧出海、企业培训本地化与跨境营销素材治理，把繁琐的后期清洗和配音变成标准化流水线。</p>
+      </div>
+
+      <div class="scenarios-grid">
+        <article class="scenario-card">
+          <div class="scenario-head">
+            <div class="scenario-icon">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <rect x="2" y="3.5" width="14" height="11" rx="2.2" stroke="currentColor" stroke-width="1.4"/>
+                <path d="M7.4 6.7l4 2.3-4 2.3V6.7z" fill="currentColor"/>
+              </svg>
+            </div>
+            <span class="mini-tag">短剧出海</span>
+          </div>
+          <h3 class="scenario-title">整季去硬字幕 + 多语配音发行</h3>
+          <p class="scenario-desc">批量擦除国内平台角标、集数信息与中文硬字幕，保留人物情感与音色复刻英/日/韩/西语配音，直接烧录海外发行字幕。</p>
+          <div class="scenario-recipe">推荐：先去水印（专业精准）→ 高质量配音 + 动态时长</div>
+        </article>
+
+        <article class="scenario-card">
+          <div class="scenario-head">
+            <div class="scenario-icon">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M2.2 6.8L9 3.2l6.8 3.6L9 10.4 2.2 6.8z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+                <path d="M4.8 8.3v4.1c0 1 1.9 2.2 4.2 2.2s4.2-1.2 4.2-2.2V8.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <span class="mini-tag">课程培训</span>
+          </div>
+          <h3 class="scenario-title">长时长录播课多语言本地化</h3>
+          <p class="scenario-desc">支持单文件长达 3–4 小时的课程与内训录像，批量擦除旧机构 Logo 并输出多国语言配音与标准 .vtt / .srt 字幕轨。</p>
+          <div class="scenario-recipe">推荐：固定区域模板（仅擦 Logo）+ 音色还原模式</div>
+        </article>
+
+        <article class="scenario-card">
+          <div class="scenario-head">
+            <div class="scenario-icon">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M3 13.5l3.6-3.6 2.7 2.7L15 6.9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M11.6 6.9H15v3.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <span class="mini-tag">营销材料</span>
+          </div>
+          <h3 class="scenario-title">投放素材复用与多国版本裂变</h3>
+          <p class="scenario-desc">快速清洗历史爆款广告片的旧水印与活动字幕，15 秒至 3 分钟竖版视频 1:4 极速出片，迅速测试东南亚、拉美与欧美市场。</p>
+          <div class="scenario-recipe">推荐：极速版去水印（¥0.5/分）+ 情感复刻多语输出</div>
+        </article>
+      </div>
+
+      <div class="cap-matrix">
+        <div class="cap-cell">
+          <div class="cap-cell-title">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M2.5 8h2l1.6-4 2.2 8 1.6-4h3.6" stroke="#4CE0A5" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>完整保留原始音频</span>
+          </div>
+          <p class="cap-cell-desc">视频修复仅重绘干扰像素区域，原音轨与环境背景音零损保留；翻译模式自动分离人声与 BGM。</p>
+        </div>
+        <div class="cap-cell">
+          <div class="cap-cell-title">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.8" stroke="#4CE0A5" stroke-width="1.3"/><path d="M8 4.8v3.4l2.4 1.4" stroke="#4CE0A5" stroke-width="1.3" stroke-linecap="round"/></svg>
+            <span>高帧率封顶自动省费</span>
+          </div>
+          <p class="cap-cell-desc">对 50/60fps 源片开启 30fps 输出上限，工作台自动提示规避 2 倍帧率计费系数，立省一半成本。</p>
+        </div>
+        <div class="cap-cell">
+          <div class="cap-cell-title">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="10" rx="2" stroke="#4CE0A5" stroke-width="1.3"/><path d="M5 9.6h6M5 6.8h3.5" stroke="#4CE0A5" stroke-width="1.3" stroke-linecap="round"/></svg>
+            <span>31 语种专属字体映射</span>
+          </div>
+          <p class="cap-cell-desc">阿拉伯语、日语、韩语、泰语、希伯来语等自动匹配合规字库（NotoSans / Pretendard / Cairo），无方块乱码。</p>
+        </div>
+        <div class="cap-cell">
+          <div class="cap-cell-title">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M4.2 1.8v9.8h9.8M11.8 14.2V4.4H2" stroke="#4CE0A5" stroke-width="1.3" stroke-linecap="round"/></svg>
+            <span>区域坐标模板跨集复用</span>
+          </div>
+          <p class="cap-cell-desc">同一部剧的角标与字幕位置只需标一次，保存模板后一键套用到整季上百集，彻底避免动态漏检。</p>
+        </div>
+        <div class="cap-cell">
+          <div class="cap-cell-title">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M2.5 11.5h11M8 2.5v6.5M5.3 6.3L8 9l2.7-2.7" stroke="#4CE0A5" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>无门槛本地批量上传</span>
+          </div>
+          <p class="cap-cell-desc">无需配置云桶或编写接口代码，直接从电脑拖入多文件即可开跑，支持断点续传与 24h–72h 预签名下载。</p>
+        </div>
+        <div class="cap-cell">
+          <div class="cap-cell-title">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M3 13h10M4 9.5v2M8 5.5v6M12 7.5v4" stroke="#4CE0A5" stroke-width="1.4" stroke-linecap="round"/></svg>
+            <span>提交前精确账单预估</span>
+          </div>
+          <p class="cap-cell-desc">按量出账无月费门槛，工作台逐文件展示预估分钟与费用，运行中面板同步累计已产生金额。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 4: 按量计费与在线试算器 -->
+  <section class="section alt" id="pricing">
+    <div class="container">
+      <div class="section-head">
+        <span class="section-eyebrow">TRANSPARENT PRICING</span>
+        <h2 class="section-title">纯按量计费，每一分钱算得明明白白</h2>
+        <p class="section-sub">无包年套餐绑定，按实际处理分钟数每小时出账。拖动右侧试算器，提前看清整批视频的预估成本。</p>
+      </div>
+
+      <div class="pricing-layout">
+        <!-- 左侧透明价目表 -->
+        <div class="pricing-cards-col">
+          <div class="price-card">
+            <div class="price-card-head">
+              <span class="price-card-title">视频修复（去水印 / 去字幕）</span>
+              <span class="mini-tag">按输出折算分钟</span>
+            </div>
+            <div class="price-tier-list">
+              <div class="price-tier-row">
+                <div>
+                  <div class="price-tier-name">极速版修复</div>
+                  <div class="price-tier-sub">速度优先 · 1080p 内系数 ×1，4K 系数 ×2</div>
+                </div>
+                <span class="price-tier-val">¥0.50 / 分</span>
+              </div>
+              <div class="price-tier-row">
+                <div>
+                  <div class="price-tier-name">专业版 · 标准检测</div>
+                  <div class="price-tier-sub">无痕画质 · 720p 享 0.6 折系数，1080p ×1，4K ×2</div>
+                </div>
+                <span class="price-tier-val">¥1.50 / 分</span>
+              </div>
+              <div class="price-tier-row">
+                <div>
+                  <div class="price-tier-name">专业版 · 精准识别</div>
+                  <div class="price-tier-sub">大模型精准识别非文字水印、Logo、角标与剧集信息</div>
+                </div>
+                <span class="price-tier-val">¥3.00 / 分</span>
+              </div>
+            </div>
+            <p class="price-rule-note">帧率系数：≤24fps 为 0.8，24–30fps 为 1.0，高于 30fps 按 ⌈帧率/30⌉ 折算（开启 30fps 上限可锁定系数 1.0）。</p>
+          </div>
+
+          <div class="price-card">
+            <div class="price-card-head">
+              <span class="price-card-title">视频翻译（配音 + 字幕）</span>
+              <span class="mini-tag">按输入时长 × 语种数</span>
+            </div>
+            <div class="price-tier-list">
+              <div class="price-tier-row">
+                <div>
+                  <div class="price-tier-name">情感复刻 / 音色还原</div>
+                  <div class="price-tier-sub">含音色 1:1 复刻、字幕翻译与多格式字幕文件导出</div>
+                </div>
+                <span class="price-tier-val">¥1.50 / 分</span>
+              </div>
+              <div class="price-tier-row">
+                <div>
+                  <div class="price-tier-name">高质量配音</div>
+                  <div class="price-tier-sub">更贴近原声情感与发音准确度，支持开启快速模式提速</div>
+                </div>
+                <span class="price-tier-val">¥4.00 / 分</span>
+              </div>
+            </div>
+            <p class="price-rule-note">若开启「先去水印再翻译」，修复原片仅生成一次并按视频修复单价另计，所有目标语种共用同一份干净母带。</p>
+          </div>
+        </div>
+
+        <!-- 右侧交互式成本试算器 -->
+        <div class="calc-panel">
+          <div class="calc-head">
+            <span class="calc-title">在线成本试算器</span>
+            <span class="mini-tag">默认 30fps 系数 ×1</span>
+          </div>
+
+          <div class="calc-group">
+            <div class="calc-label-row">
+              <span>单集平均时长</span>
+              <span class="calc-val" id="calcDurVal">8 分钟/集</span>
+            </div>
+            <input class="calc-range" id="calcDurRange" type="range" min="1" max="30" value="8" />
+          </div>
+
+          <div class="calc-group">
+            <div class="calc-label-row">
+              <span>本批文件数量</span>
+              <span class="calc-val" id="calcCountVal">4 集（合计 32 分钟）</span>
+            </div>
+            <input class="calc-range" id="calcCountRange" type="range" min="1" max="60" value="4" />
+          </div>
+
+          <div class="calc-group">
+            <div class="calc-label-row">
+              <span>视频修复档位</span>
+              <span style="font-size:11px;color:var(--text-dim);">去水印 / 去硬字幕</span>
+            </div>
+            <div class="calc-seg">
+              <button class="calc-seg-btn" data-calc-inpaint="none">不开启</button>
+              <button class="calc-seg-btn" data-calc-inpaint="lite">极速 ¥0.5</button>
+              <button class="calc-seg-btn" data-calc-inpaint="standard">标准 ¥1.5</button>
+              <button class="calc-seg-btn active" data-calc-inpaint="precise">精准 ¥3.0</button>
+            </div>
+          </div>
+
+          <div class="calc-group">
+            <div class="calc-label-row">
+              <span>修复输出分辨率上限</span>
+              <span style="font-size:11px;color:var(--text-dim);">4K 分辨率系数 ×2</span>
+            </div>
+            <div class="calc-seg cols-2">
+              <button class="calc-seg-btn active" data-calc-res="1080p">1080p（系数 ×1）</button>
+              <button class="calc-seg-btn" data-calc-res="4k">4K 超清（系数 ×2）</button>
+            </div>
+          </div>
+
+          <div class="calc-group">
+            <div class="calc-label-row">
+              <span>叠加多语种配音翻译</span>
+              <span style="font-size:11px;color:var(--text-dim);">31 语种任选</span>
+            </div>
+            <div class="calc-seg" style="grid-template-columns:repeat(3,minmax(0,1fr));">
+              <button class="calc-seg-btn" data-calc-trans="none">不翻译</button>
+              <button class="calc-seg-btn" data-calc-trans="standard">标准 ¥1.5</button>
+              <button class="calc-seg-btn active" data-calc-trans="high_quality">高质量 ¥4.0</button>
+            </div>
+          </div>
+
+          <div class="calc-group" id="calcLangGroup">
+            <div class="calc-label-row">
+              <span>目标翻译语种数量</span>
+              <span class="calc-val" id="calcLangVal">3 种语种</span>
+            </div>
+            <input class="calc-range" id="calcLangRange" type="range" min="1" max="8" value="3" />
+          </div>
+
+          <div class="calc-result-box">
+            <div class="calc-breakdown">
+              <span>视频修复预估</span>
+              <span class="mono" id="calcInpaintLine">¥96.00（32 折算分）</span>
+            </div>
+            <div class="calc-breakdown">
+              <span>多语翻译预估</span>
+              <span class="mono" id="calcTranslateLine">¥384.00（32 分 × 3 语种）</span>
+            </div>
+            <div class="calc-total-row">
+              <span style="font-size:12.5px;color:var(--text-secondary);">预计总计</span>
+              <span class="calc-total-price" id="calcTotalPrice">¥480.00</span>
+            </div>
+            <a class="btn btn-primary" style="width:100%;height:42px;margin-top:4px;" id="calcStartBtn" href="./workspace.html#translate">进入工作台配置多语翻译 →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 5: 常见问题 FAQ -->
+  <section class="section" id="faq">
+    <div class="container">
+      <div class="section-head center">
+        <span class="section-eyebrow">FAQ</span>
+        <h2 class="section-title">开始批量处理前，你可能想了解的</h2>
+        <p class="section-sub">关于批量上传、计费折算规则、画质档位与成片下载有效期的常见说明。</p>
+      </div>
+
+      <div class="faq-grid">
+        <div class="faq-item open">
+          <button class="faq-q">
+            <span>需要懂技术或自己接对象存储吗？</span>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq-a">完全不需要。所有素材直接从本地电脑多选或拖入整个文件夹上传，工作台自动完成后台排队、进度轮询与结果归集，成片直接一键打包下载到本地。</div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q">
+            <span>极速版、专业标准版和专业精准版怎么选？</span>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq-a">只擦常规中文/英文字幕且看重性价比选极速版（¥0.5/分，不支持日文与精准识别）；需要无痕高质量文字修复选专业标准版（¥1.5/分）；包含图片台标、角标、动态 Logo 或复杂花体字时，选专业精准版（¥3/分）效果最好。</div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q">
+            <span>50/60fps 高帧率视频为什么建议封顶 30fps？</span>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq-a">视频修复计费按输出帧率折算：30fps 以内系数为 1.0，高于 30fps 则向上取整为 2 倍系数。短剧和常规成片把输出帧率上限保持在 30fps，画质观感几乎一致，但能直接省去一半费用。</div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q">
+            <span>视频修复和视频翻译的计费口径有什么区别？</span>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq-a">视频修复按「实际输出时长 × 帧率系数 × 分辨率系数」计费；视频翻译按「输入视频时长 × 目标语种数量」计费。两者在工作台提交前都会逐文件给出透明预估。</div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q">
+            <span>处理完成后的视频和字幕链接能保留多久？</span>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq-a">视频修复成片的临时下载链接有效期为 24 小时，多语翻译产物（视频/字幕/纯音频）下载链接有效期为 3 天，建议批次完成后及时批量下载归档。</div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q">
+            <span>同一部剧的角标都在固定位置，能减少误擦吗？</span>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq-a">可以。在「区域标注」里直接拖框选中角标区域并设置生效起止时间，保存为模板后一键套用到整季所有集数；固定区域模式跳过动态检测，只处理框内范围，更可控也更稳。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 6: 底部转化区 -->
+  <section class="section" style="padding-top:20px;padding-bottom:84px;">
+    <div class="container">
+      <div class="final-cta-card">
+        <span class="section-eyebrow">READY TO SHIP</span>
+        <h2 class="final-cta-title">把下一季成片拖进工作台，今天就能交付多语版本</h2>
+        <p class="final-cta-sub">本地多选直接上传，提交前看清每一笔折算费用，支持随时暂停队列与逐帧核验效果。</p>
+        <div class="hero-ctas" style="margin-top:8px;">
+          <a class="btn btn-primary btn-lg" href="./workspace.html">
+            <span>进入工作台</span>
+            <svg width="15" height="15" viewBox="0 0 14 14" fill="none">
+              <path d="M2.8 7h8.4M7.8 3.6L11.2 7l-3.4 3.4" stroke="#06231A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
+          <a class="btn btn-ghost btn-lg" href="./workspace.html#translate">直接新建翻译任务</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <a class="site-brand" href="#">
+            <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+              <rect x="1.6" y="5.2" width="16" height="15.6" rx="4.2" stroke="#4CE0A5" stroke-width="1.5"/>
+              <path d="M6.2 10h6.6M6.2 13.6h4.6" stroke="#4CE0A5" stroke-width="1.4" stroke-linecap="round" opacity="0.55"/>
+              <path d="M19.4 12.6l1.1 2.9 2.9 1.1-2.9 1.1-1.1 2.9-1.1-2.9-2.9-1.1 2.9-1.1z" fill="#4CE0A5"/>
+            </svg>
+            <div class="brand-text">
+              <span class="brand-name">净影</span>
+              <span class="brand-sub">CLEANFRAME</span>
+            </div>
+          </a>
+          <p class="footer-tagline">面向影视后期、短剧出海与媒资治理团队的批量视频无痕修复与多语种翻译工作台。</p>
+        </div>
+
+        <div class="footer-col">
+          <h4>核心能力</h4>
+          <ul>
+            <li><a href="#features">无痕去水印与硬字幕</a></li>
+            <li><a href="#features">1000×1000 固定区域标注</a></li>
+            <li><a href="#features">31 语种原声复刻配音</a></li>
+            <li><a href="#pricing">按量计费与成本试算</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>直达工作台</h4>
+          <ul>
+            <li><a href="./workspace.html">任务总览</a></li>
+            <li><a href="./workspace.html#inpaint">新建修复任务</a></li>
+            <li><a href="./workspace.html#translate">新建翻译任务</a></li>
+            <li><a href="./workspace.html#annotate">区域标注模板</a></li>
+            <li><a href="./workspace.html#subtitle-style">字幕样式库</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>规格与地域</h4>
+          <ul>
+            <li><span>支持格式：mp4 / mov / avi / mkv</span></li>
+            <li><span>最高规格：4K · 10 GB · 3–4 小时</span></li>
+            <li><span>可用地域：北京 / 上海 / 广州</span></li>
+            <li><span>调度配额：10 并发 · 600 RPM</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-wordmark" aria-hidden="true">CLEANFRAME</div>
+
+      <div class="footer-bottom">
+        <span>© 2026 净影 CleanFrame · 批量视频修复与多语翻译工作台</span>
+        <span class="mono">las_video_inpaint_pro · las_video_translate</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="./js/landing.js"></script>
+</body>
+</html>

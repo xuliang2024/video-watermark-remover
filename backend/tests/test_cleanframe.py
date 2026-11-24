@@ -1,0 +1,364 @@
+from __future__ import annotations
+
+import io
+import os
+import shutil
+import subprocess
+import tempfile
+import zipfile
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+
+# Isolate test database & storage before importing app
+_TMP_DIR = Path(tempfile.mkdtemp(prefix="cleanframe_test_"))
+os.environ["CLEANFRAME_DATABASE_URL"] = f"sqlite:///{(_TMP_DIR / 'test.db').as_posix()}"
+os.environ["CLEANFRAME_STORAGE_DIR"] = str(_TMP_DIR / "storage")
+os.environ["CLEANFRAME_EXECUTION_MODE"] = "mock"
+os.environ["CLEANFRAME_SCHEDULER_ENABLED"] = "false"
+
+from fastapi.testclient import TestClient  # noqa: E402
+
+from app.config import update_runtime_config  # noqa: E402
+from app.main import app  # noqa: E402
+from app.schemas import FileEstimateInput, InpaintConfig, RegionItem, SubtitleStyleConfig, TranslateConfig  # noqa: E402
+from app.services.billing import (  # noqa: E402
+    ParameterValidationError,
+    build_inpaint_las_data,
+    build_translate_las_data,
+    calc_inpaint_batch,
+    calc_translate_batch,
+    resolve_inpaint_detection_mode,
+    validate_inpaint_config,
+    validate_translate_config,
+)
+from app.services.scheduler import scheduler  # noqa: E402
+from app.services.volc_las import VolcengineLasClient  # noqa: E402
+
+
+@pytest.fixture(scope="module")
+def client():
+    with TestClient(app) as c:
+        yield c
+    shutil.rmtree(_TMP_DIR, ignore_errors=True)
+
+
+def _generate_real_mp4(dest: Path) -> Path:
+    ffmpeg = shutil.which("ffmpeg")
+    assert ffmpeg, "ffmpeg is required for real video integration test"
+    cmd = [
+        ffmpeg,
+        "-y",
+        "-f",
+        "lavfi",
+        "-i",
+        "testsrc=duration=2:size=1280x720:rate=30",
+        "-f",
+        "lavfi",
+        "-i",
+        "sine=frequency=440:duration=2",
+        "-c:v",
+        "libx264",
+        "-pix_fmt",
+        "yuv420p",
+        "-c:a",
+        "aac",
+        "-shortest",
+        str(dest),
+    ]
+    res = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+    assert res.returncode == 0, f"ffmpeg failed: {res.stderr}"
+    return dest
+
+
+# ============================================================
+# 1. Billing Formula & Parameter Validation Unit Tests
+# ============================================================
+
+
+def test_inpaint_billing_matches_design_spec_exactly():
+    files = [
+        FileEstimateInput(id="1", name="S01E01.mp4", width=1920, height=1080, fps=29.97, duration_sec=504, size_bytes=1240000000),
+        FileEstimateInput(id="2", name="S01E02.mp4", width=1920, height=1080, fps=29.97, duration_sec=492, size_bytes=1180000000),
+        FileEstimateInput(id="3", name="EP03.mp4", width=3840, height=2160, fps=25.00, duration_sec=546, size_bytes=3860000000),
+        FileEstimateInput(id="4", name="BTS.mp4", width=2560, height=1440, fps=59.94, duration_sec=182, size_bytes=940000000),
+    ]
+    cfg = InpaintConfig(
+        model_level="pro",
+        targets=["watermark", "subtitle"],
+        locate_mode="precise",
+        max_resolution="4k",
+        max_fps=30,
+    )
+    res = calc_inpaint_batch(files, cfg)
+    assert res["total_bill_min"] == pytest.approx(40.87, abs=0.02)
+    assert res["total_cost"] == pytest.approx(122.60, abs=0.05)
+    assert len(res["high_fps_warnings"]) == 1
+    assert res["high_fps_warnings"][0]["name"] == "BTS.mp4"
+
+
+def test_translate_billing_matches_design_spec_exactly():
+    files = [
+        FileEstimateInput(id="1", name="S01E01.mp4", width=1920, height=1080, fps=29.97, duration_sec=504),
+        FileEstimateInput(id="2", name="promo.mp4", width=1080, height=1920, fps=30.0, duration_sec=42),
+    ]
+    cfg = TranslateConfig(
+        source_lang="zh-CN",
+        target_langs=["en-US", "ja-JP", "ko-KR"],
+        dubbing_mode="high_quality",
+        fast_mode=True,
+        caption_formats=[".srt", ".ass"],
+    )
+    res = calc_translate_batch(files, cfg)
+    assert res["task_count"] == 6
+    assert res["caption_count"] == 12
+    assert res["total_bill_min"] == pytest.approx(27.3, abs=0.01)
+    assert res["total_cost"] == pytest.approx(109.20, abs=0.01)
+
+
+def test_validation_rules_block_invalid_combinations():
+    with pytest.raises(ParameterValidationError):
+        validate_inpaint_config(InpaintConfig(model_level="lite", locate_mode="precise"))
+
+    with pytest.raises(ParameterValidationError):
+        validate_inpaint_config(
+            InpaintConfig(
+                locate_mode="fixed",
+                regions=[RegionItem(id="r1", name="bad", short_name="bad", bbox=[500, 100, 400, 200])],
+            )
+        )
+
+    with pytest.raises(ParameterValidationError):
+        validate_translate_config(TranslateConfig(source_lang="zh-CN", target_langs=["zh-CN", "en-US"]))
+
+    with pytest.raises(ParameterValidationError):
+        validate_translate_config(TranslateConfig(dubbing_mode="emotion", fast_mode=True))
+
+
+def test_las_payload_builders_and_detection_modes():
+    assert resolve_inpaint_detection_mode(InpaintConfig(locate_mode="standard", targets=["subtitle"])) == "standard_subtitle"
+    assert resolve_inpaint_detection_mode(InpaintConfig(locate_mode="standard", targets=["watermark"])) == "standard_watermark"
+    assert resolve_inpaint_detection_mode(InpaintConfig(locate_mode="standard", targets=["watermark", "subtitle"])) == "standard_subtitle_watermark"
+    assert resolve_inpaint_detection_mode(InpaintConfig(locate_mode="standard", targets=["watermark", "subtitle", "scrolling_subtitle", "drama_info"])) == "standard_all"
+
+    fixed_cfg = InpaintConfig(
+        locate_mode="fixed",
+        subtitle_protect=True,
+        regions=[
+            RegionItem(id="r1", name="logo", short_name="logo", bbox=[820, 60, 960, 180], start_sec=0.5, end_sec=62.0, until_end=False),
+            RegionItem(id="r2", name="sub", short_name="sub", bbox=[80, 820, 920, 930], start_sec=62.0, end_sec=504.0, until_end=True),
+        ],
+    )
+    payload = build_inpaint_las_data("tos://bucket/in.mp4", "tos://bucket/out/", fixed_cfg)
+    assert payload["fixed_bboxes"] == [[820, 60, 960, 180], [80, 820, 920, 930]]
+    assert payload["fixed_bboxes_intervals"] == [[0.5, 62.0], [62.0, -1]]
+    assert payload["subtitle_protect"] is False
+    assert "targets" not in payload
+
+    tr_payload = build_translate_las_data(
+        "tos://bucket/in.mp4",
+        "tos://bucket/out/",
+        TranslateConfig(enable_inpaint=True, output_dubbing_audio=True),
+        SubtitleStyleConfig(),
+    )
+    assert tr_payload["enable_video_inpaint"] is True
+    assert tr_payload["output_dubbing_audio"] is True
+    assert "video_inpaint_params" in tr_payload
+    assert tr_payload["subtitle_style"]["font_size"] == 60
+
+
+@pytest.mark.asyncio
+async def test_volcengine_las_live_http_submit_and_poll():
+    update_runtime_config(
+        {
+            "execution_mode": "live",
+            "las_api_key": "las-test-secret-key",
+            "las_region": "cn-beijing",
+            "tos_bucket": "cleanframe-bucket",
+        }
+    )
+    try:
+        las = VolcengineLasClient()
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            "metadata": {"task_id": "task-volc-live-001", "task_status": "PENDING", "business_code": "0", "error_msg": ""}
+        }
+
+        with patch("httpx.AsyncClient.post", new=AsyncMock(return_value=mock_resp)) as mocked_post:
+            res = await las.submit_operator(
+                "las_video_inpaint_pro",
+                "v1",
+                {"video_url": "tos://cleanframe-bucket/a.mp4", "output_tos_path": "tos://cleanframe-bucket/out/"},
+                callback_url="https://api.example.com/api/webhooks/las-callback",
+            )
+            assert res["metadata"]["task_id"] == "task-volc-live-001"
+            call_args = mocked_post.call_args
+            assert call_args.args[0] == "https://operator.las.cn-beijing.volces.com/api/v1/submit"
+            assert call_args.kwargs["headers"]["Authorization"] == "Bearer las-test-secret-key"
+            assert call_args.kwargs["json"]["operator_id"] == "las_video_inpaint_pro"
+            assert call_args.kwargs["json"]["callback"]["url"] == "https://api.example.com/api/webhooks/las-callback"
+    finally:
+        update_runtime_config({"execution_mode": "mock", "las_api_key": "", "tos_bucket": ""})
+
+
+# ============================================================
+# 2. Full-Stack API & Real Video E2E Tests
+# ============================================================
+
+
+def test_bootstrap_and_overview(client: TestClient):
+    r = client.get("/api/health")
+    assert r.status_code == 200
+    assert r.json()["status"] == "ok"
+
+    boot = client.get("/api/system/bootstrap").json()
+    assert len(boot["output_languages"]) == 31
+    assert len(boot["source_languages"]) == 25
+    assert len(boot["inpaint_presets"]) == 3
+
+    ov = client.get("/api/dashboard/overview").json()
+    assert len(ov["tasks"]) >= 6
+
+
+@pytest.mark.asyncio
+async def test_real_video_upload_inpaint_translate_and_downloads(client: TestClient):
+    mp4_path = _generate_real_mp4(_TMP_DIR / "sample_real_720p.mp4")
+
+    # 1) Upload real mp4 -> verify ffprobe extraction + thumbnail
+    with mp4_path.open("rb") as fh:
+        up = client.post(
+            "/api/assets/upload?purpose=inpaint",
+            files={"files": ("test_drama_ep01.mp4", fh, "video/mp4")},
+        )
+    assert up.status_code == 200, up.text
+    asset = up.json()["items"][0]
+    assert asset["width"] == 1280
+    assert asset["height"] == 720
+    assert asset["fps"] == pytest.approx(30.0, abs=0.5)
+    assert asset["duration_sec"] == pytest.approx(2.0, abs=0.3)
+    assert asset["thumbnail_url"].startswith("/media/thumbnails/")
+
+    # 2) Submit inpaint batch & drive scheduler to completion
+    bill_before = len(client.get("/api/billing/summary").json()["records"])
+    batch_res = client.post(
+        "/api/batches/inpaint",
+        json={
+            "name": "E2E 实测修复批次",
+            "asset_ids": [asset["id"]],
+            "config": {
+                "model_level": "pro",
+                "targets": ["watermark", "subtitle"],
+                "locate_mode": "precise",
+                "max_resolution": "1080p",
+                "max_fps": 30,
+                "video_mode": "balanced",
+                "codec": "h264",
+            },
+        },
+    )
+    assert batch_res.status_code == 200, batch_res.text
+    batch_id = batch_res.json()["batch_id"]
+
+    # Tick scheduler: 1 dispatch + 3 progress ticks -> COMPLETED
+    for _ in range(5):
+        await scheduler.tick_once()
+
+    detail = client.get(f"/api/batches/{batch_id}").json()
+    assert detail["counts"]["completed"] == 1
+    assert detail["status"] == "COMPLETED"
+    task_id = detail["queue"][0]["id"]
+
+    # Verify downloadable output video
+    dl = client.get(f"/api/tasks/{task_id}/download")
+    assert dl.status_code == 200
+    assert len(dl.content) > 1000
+
+    # Verify billing record appended
+    bill_after = len(client.get("/api/billing/summary").json()["records"])
+    assert bill_after == bill_before + 1
+
+    # 3) Submit translate batch using uploaded video & verify ZIP captions
+    tr_batch = client.post(
+        "/api/batches/translate",
+        json={
+            "asset_ids": [asset["id"]],
+            "config": {
+                "source_lang": "zh-CN",
+                "target_langs": ["en-US", "ja-JP", "ko-KR"],
+                "dubbing_mode": "high_quality",
+                "fast_mode": True,
+                "dynamic_duration": True,
+                "burn_subtitles": True,
+                "caption_formats": [".srt", ".ass"],
+                "enable_inpaint": True,
+                "output_dubbing_audio": False,
+            },
+        },
+    )
+    assert tr_batch.status_code == 200, tr_batch.text
+    tr_batch_id = tr_batch.json()["batch_id"]
+
+    for _ in range(5):
+        await scheduler.tick_once()
+
+    tr_detail = client.get(f"/api/batches/{tr_batch_id}").json()
+    assert tr_detail["counts"]["completed"] == 1
+    tr_task_id = tr_detail["queue"][0]["id"]
+
+    zip_resp = client.get(f"/api/tasks/{tr_task_id}/download-captions")
+    assert zip_resp.status_code == 200
+    with zipfile.ZipFile(io.BytesIO(zip_resp.content)) as zf:
+        names = zf.namelist()
+        assert len(names) == 6  # 3 langs x 2 formats (.srt, .ass)
+        assert any(n.endswith("_en-US.srt") for n in names)
+        assert any(n.endswith("_ja-JP.ass") for n in names)
+
+
+def test_templates_subtitle_style_and_webhook_idempotency(client: TestClient):
+    # Region template save
+    tpl = client.post(
+        "/api/templates/regions",
+        json={
+            "name": "测试台标模板",
+            "regions": [
+                {"id": "r1", "name": "台标", "short_name": "台标", "color": "mint", "bbox": [800, 50, 950, 150], "start_sec": 0, "end_sec": 60, "until_end": False}
+            ],
+        },
+    )
+    assert tpl.status_code == 200
+    tpl_id = tpl.json()["id"]
+    assert client.delete(f"/api/templates/regions/{tpl_id}").status_code == 200
+
+    # Subtitle style save & reset
+    st = client.put("/api/settings/subtitle-style", json={"font": "FiraGO", "font_size": 72, "font_color": "#FDE047"})
+    assert st.status_code == 200
+    assert st.json()["font_size"] == 72
+    reset = client.post("/api/settings/subtitle-style/reset")
+    assert reset.json()["font_size"] == 60
+
+    # Webhook idempotency on seeded RUNNING task
+    cb1 = client.post(
+        "/api/webhooks/las-callback",
+        json={
+            "metadata": {"task_id": "las-task-20261113-03f1", "task_status": "COMPLETED", "business_code": "0", "error_msg": ""},
+            "data": {"output_video_url": "/media/sample/frame_16x9.png", "resolution": "3840x2160", "output_fps": 25.0},
+        },
+    )
+    assert cb1.status_code == 200
+    assert cb1.json()["status"] == "COMPLETED"
+
+    cb2 = client.post(
+        "/api/webhooks/las-callback",
+        json={
+            "metadata": {"task_id": "las-task-20261113-03f1", "task_status": "COMPLETED", "business_code": "0", "error_msg": ""},
+            "data": {},
+        },
+    )
+    assert cb2.status_code == 200
+    assert cb2.json().get("idempotent_skip") is True
+
+    # CSV exports
+    assert client.get("/api/tasks/export").status_code == 200
+    assert client.get("/api/billing/export").status_code == 200
