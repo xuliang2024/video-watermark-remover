@@ -178,9 +178,9 @@ class VolcengineLasClient:
 
         return resp.json()
 
-    async def test_connection(self) -> dict[str, Any]:
+    async def test_connection(self, draft_overrides: dict[str, Any] | None = None) -> dict[str, Any]:
         """Verify LAS API Key & endpoint reachability via a lightweight Poll probe."""
-        cfg = get_runtime_config()
+        cfg = get_runtime_config(draft_overrides)
         if not cfg["has_las_api_key"]:
             return {
                 "configured": False,

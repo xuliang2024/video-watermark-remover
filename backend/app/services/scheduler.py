@@ -151,15 +151,15 @@ class TaskScheduler:
         self._task: asyncio.Task | None = None
         self._stop_event = asyncio.Event()
 
-    async def start(self) -> None:
-        settings = get_settings()
-        if not settings.scheduler_enabled:
+    async def start(self, *, force: bool = False) -> None:
+        cfg = get_runtime_config()
+        if not force and not cfg.get("scheduler_enabled", True):
             return
         if self._task and not self._task.done():
             return
         self._stop_event.clear()
         self._task = asyncio.create_task(self._loop(), name="cleanframe-scheduler")
-        logger.info("CleanFrame scheduler started (poll=%.1fs)", settings.poll_interval_seconds)
+        logger.info("CleanFrame scheduler started (poll=%.1fs)", float(cfg.get("poll_interval_seconds", 3.0)))
 
     async def stop(self) -> None:
         self._stop_event.set()

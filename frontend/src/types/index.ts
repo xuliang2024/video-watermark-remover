@@ -7,23 +7,67 @@ export type WorkspaceViewId =
   | 'compare'
   | 'translate-result'
   | 'subtitle-style'
-  | 'billing';
+  | 'billing'
+  | 'settings';
 
 export interface SystemConfig {
   execution_mode: 'auto' | 'live' | 'mock';
   effective_mode: 'live' | 'mock';
+  public_base_url: string;
+  monthly_quota_minutes: number;
   has_las_api_key: boolean;
   las_api_key_masked: string;
   las_region: string;
   las_base_url: string;
+  las_base_url_raw: string;
+  las_callback_url: string;
+  callback_url: string;
   tos_bucket: string;
   tos_endpoint: string;
   tos_region: string;
+  tos_input_prefix: string;
+  tos_output_prefix: string;
+  has_volc_ak: boolean;
+  volc_access_key_id_masked: string;
+  has_volc_sk: boolean;
+  volc_access_key_secret_masked: string;
   has_tos_credentials: boolean;
+  scheduler_enabled: boolean;
   max_concurrency: number;
   poll_interval_seconds: number;
-  callback_url: string;
+  database_url: string;
+  storage_dir: string;
+  active_database_url: string;
+  active_storage_dir: string;
+  restart_required: boolean;
+  setup_completed: boolean;
+  is_first_run: boolean;
+  env_file_path: string;
+  env_preview: string;
   supported_regions: string[];
+}
+
+export interface SystemConfigUpdatePayload {
+  execution_mode?: 'auto' | 'live' | 'mock';
+  public_base_url?: string;
+  monthly_quota_minutes?: number;
+  las_api_key?: string;
+  las_region?: string;
+  las_base_url?: string;
+  las_callback_url?: string;
+  tos_bucket?: string;
+  tos_region?: string;
+  tos_endpoint?: string;
+  tos_input_prefix?: string;
+  tos_output_prefix?: string;
+  volc_access_key_id?: string;
+  volc_access_key_secret?: string;
+  scheduler_enabled?: boolean;
+  max_concurrency?: number;
+  poll_interval_seconds?: number;
+  database_url?: string;
+  storage_dir?: string;
+  clear_keys?: Array<'las_api_key' | 'volc_access_key_id' | 'volc_access_key_secret'>;
 }
 
 export interface LanguageItem {

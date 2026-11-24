@@ -279,7 +279,7 @@ def create_inpaint_batch(body: CreateInpaintBatchRequest, db: Session = Depends(
 
     for idx, (asset, est_item) in enumerate(zip(ordered_assets, summary["items"]), start=1):
         task_id = new_id("task")
-        video_url = asset.tos_uri or asset.video_url or f"{get_settings().public_base_url}/media/sample/frame_16x9.png"
+        video_url = asset.tos_uri or asset.video_url or f"{sys_cfg['public_base_url'].rstrip('/')}/media/sample/frame_16x9.png"
         out_tos_path = tos_service.build_output_tos_path(code, task_id)
         las_data = build_inpaint_las_data(video_url, out_tos_path, body.config)
         meta_str = f"{asset.width}×{asset.height} · {asset.fps:.2f}fps · {format_duration_mmss(asset.duration_sec)}"
@@ -391,7 +391,7 @@ def create_translate_batch(body: CreateTranslateBatchRequest, db: Session = Depe
     lang_count = len(body.config.target_langs)
     for idx, asset in enumerate(ordered_assets, start=1):
         task_id = new_id("task")
-        video_url = asset.tos_uri or asset.video_url or f"{get_settings().public_base_url}/media/sample/frame_16x9.png"
+        video_url = asset.tos_uri or asset.video_url or f"{sys_cfg['public_base_url'].rstrip('/')}/media/sample/frame_16x9.png"
         out_tos_path = tos_service.build_output_tos_path(code, task_id)
         las_data = build_translate_las_data(video_url, out_tos_path, body.config, subtitle_style)
         bill_min = round((asset.duration_sec / 60.0) * lang_count, 2)

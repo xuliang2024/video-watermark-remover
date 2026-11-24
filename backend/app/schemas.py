@@ -106,11 +106,37 @@ class RegionTemplateCreate(BaseModel):
 
 class SystemConfigUpdate(BaseModel):
     execution_mode: Literal["auto", "live", "mock"] | None = None
+    public_base_url: str | None = None
+    monthly_quota_minutes: float | None = Field(default=None, ge=10.0, le=10_000_000.0)
+
     las_api_key: str | None = None
     las_region: Literal["cn-beijing", "cn-shanghai", "cn-guangzhou"] | None = None
     las_base_url: str | None = None
+    las_callback_url: str | None = None
+
     tos_bucket: str | None = None
+    tos_region: str | None = None
     tos_endpoint: str | None = None
+    tos_input_prefix: str | None = None
+    tos_output_prefix: str | None = None
+    volc_access_key_id: str | None = None
+    volc_access_key_secret: str | None = None
+
+    scheduler_enabled: bool | None = None
+    max_concurrency: int | None = Field(default=None, ge=1, le=50)
+    poll_interval_seconds: float | None = Field(default=None, ge=0.5, le=120.0)
+
+    database_url: str | None = None
+    storage_dir: str | None = None
+
+    clear_keys: list[Literal["las_api_key", "volc_access_key_id", "volc_access_key_secret"]] = Field(
+        default_factory=list
+    )
+
+
+class SystemOnboardingDismiss(BaseModel):
+    execution_mode: Literal["auto", "mock"] | None = None
+
 
 
 class LasCallbackMetadata(BaseModel):

@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from .config import PROJECT_ROOT, get_settings
+from .config import PROJECT_ROOT, get_settings, load_persisted_settings
 from .db import SessionLocal, init_db
 from .routers import assets, jobs, resources, system
 from .seed import seed_initial_data
@@ -22,6 +22,7 @@ async def lifespan(app: FastAPI):
     init_db()
     db = SessionLocal()
     try:
+        load_persisted_settings(db)
         seed_initial_data(db)
     finally:
         db.close()

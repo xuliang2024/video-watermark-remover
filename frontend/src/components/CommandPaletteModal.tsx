@@ -11,6 +11,7 @@ const CMD_ITEMS: Array<{ view: WorkspaceViewId; code: string; title: string; des
   { view: 'translate-result', code: '07', title: '多语成片结果', desc: '英日韩三语烧录预览、5 列字幕对照与修复原片', tone: 'blue' },
   { view: 'subtitle-style', code: '样式', title: '字幕样式编辑器', desc: '配置烧录字号、位置、描边与背景不透明度', tone: 'blue' },
   { view: 'billing', code: '账单', title: '用量账单', desc: '本月修复与翻译计费汇总及出账明细', tone: 'mint' },
+  { view: 'settings', code: '设置', title: '系统设置 · 环境变量', desc: '配置火山引擎 LAS / TOS 密钥、并发调度与存储环境变量', tone: 'mint' },
 ];
 
 interface Props {

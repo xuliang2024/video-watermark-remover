@@ -362,3 +362,80 @@ def test_templates_subtitle_style_and_webhook_idempotency(client: TestClient):
     # CSV exports
     assert client.get("/api/tasks/export").status_code == 200
     assert client.get("/api/billing/export").status_code == 200
+
+
+def test_system_env_settings_persistence_and_first_run_onboarding(client: TestClient):
+    # Reset to clean first-run state
+    r0 = client.post("/api/system/config/reset?reopen_onboarding=true")
+    assert r0.status_code == 200
+    cfg0 = r0.json()
+    assert cfg0["is_first_run"] is True
+    assert cfg0["setup_completed"] is False
+
+    # Save full environment variables via System Settings page API
+    save_res = client.put(
+        "/api/system/config",
+        json={
+            "execution_mode": "auto",
+            "public_base_url": "https://cleanframe.example.com",
+            "monthly_quota_minutes": 6000.0,
+            "las_api_key": "las-secret-987654321",
+            "las_region": "cn-shanghai",
+            "las_callback_url": "https://cleanframe.example.com/api/webhooks/las-callback",
+            "tos_bucket": "cleanframe-sh-prod",
+            "tos_region": "cn-shanghai",
+            "tos_endpoint": "tos-cn-shanghai.volces.com",
+            "tos_input_prefix": "prod/inputs",
+            "tos_output_prefix": "prod/outputs",
+            "volc_access_key_id": "AKLT1234567890ABCDEF",
+            "volc_access_key_secret": "SK_SUPER_SECRET_VALUE_9999",
+            "max_concurrency": 16,
+            "poll_interval_seconds": 4.5,
+        },
+    )
+    assert save_res.status_code == 200
+    saved = save_res.json()
+    assert saved["is_first_run"] is False
+    assert saved["setup_completed"] is True
+    assert saved["effective_mode"] == "live"
+    assert saved["has_las_api_key"] is True
+    assert saved["has_tos_credentials"] is True
+    assert saved["las_api_key_masked"] == "las-****4321"
+    assert saved["volc_access_key_id_masked"] == "AKLT****CDEF"
+    assert saved["max_concurrency"] == 16
+    assert saved["monthly_quota_minutes"] == 6000.0
+    assert "LAS_API_KEY=las-****4321" in saved["env_preview"]
+    assert "SK_SUPER_SECRET_VALUE_9999" not in saved["env_preview"]
+
+    # Verify .env file persisted to isolated test storage path
+    env_file = Path(saved["env_file_path"])
+    assert env_file.exists()
+    raw_env = env_file.read_text(encoding="utf-8")
+    assert "LAS_API_KEY=las-secret-987654321" in raw_env
+    assert "VOLC_ACCESS_KEY_ID=AKLT1234567890ABCDEF" in raw_env
+    assert "CLEANFRAME_MAX_CONCURRENCY=16" in raw_env
+
+    # Leaving secret fields empty on subsequent save must preserve existing secrets
+    partial = client.put(
+        "/api/system/config",
+        json={"las_api_key": "", "volc_access_key_id": "", "max_concurrency": 12},
+    ).json()
+    assert partial["has_las_api_key"] is True
+    assert partial["has_tos_credentials"] is True
+    assert partial["max_concurrency"] == 12
+
+    # Explicit clear_keys removes targeted secret
+    cleared = client.put(
+        "/api/system/config",
+        json={"clear_keys": ["las_api_key"], "execution_mode": "auto"},
+    ).json()
+    assert cleared["has_las_api_key"] is False
+    assert cleared["effective_mode"] == "mock"
+
+    # Reopen onboarding & dismiss with mock mode
+    reopened = client.post("/api/system/config/reset?reopen_onboarding=true").json()
+    assert reopened["is_first_run"] is True
+    dismissed = client.post("/api/system/onboarding/dismiss", json={"execution_mode": "mock"}).json()
+    assert dismissed["is_first_run"] is False
+    assert dismissed["setup_completed"] is True
+

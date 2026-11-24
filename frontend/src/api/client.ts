@@ -9,6 +9,7 @@ import type {
   RegionTemplate,
   SubtitleStyleConfig,
   SystemConfig,
+  SystemConfigUpdatePayload,
   TaskDetail,
   TaskRow,
   TranslateConfig,
@@ -40,16 +41,30 @@ export const api = {
 
   getSystemConfig: () => request<SystemConfig>('/api/system/config'),
 
-  updateSystemConfig: (payload: Partial<SystemConfig> & { las_api_key?: string }) =>
+  updateSystemConfig: (payload: SystemConfigUpdatePayload) =>
     request<SystemConfig>('/api/system/config', {
       method: 'PUT',
       body: JSON.stringify(payload),
     }),
 
-  testVolcengineConnection: () =>
+  dismissOnboarding: (executionMode: 'auto' | 'mock' = 'auto') =>
+    request<SystemConfig>('/api/system/onboarding/dismiss', {
+      method: 'POST',
+      body: JSON.stringify({ execution_mode: executionMode }),
+    }),
+
+  resetSystemConfig: (reopenOnboarding = false) =>
+    request<SystemConfig>(`/api/system/config/reset?reopen_onboarding=${reopenOnboarding}`, {
+      method: 'POST',
+    }),
+
+  testVolcengineConnection: (draft?: SystemConfigUpdatePayload) =>
     request<{ las: Record<string, any>; tos: Record<string, any>; ready_for_live: boolean }>(
       '/api/system/test-connection',
-      { method: 'POST' }
+      {
+        method: 'POST',
+        ...(draft ? { body: JSON.stringify(draft) } : {}),
+      }
     ),
 
   getOverview: (status = 'all', q = '') =>

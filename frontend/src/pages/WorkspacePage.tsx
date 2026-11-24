@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../api/client';
 import { CommandPaletteModal } from '../components/CommandPaletteModal';
+import { FirstRunOnboardingModal } from '../components/FirstRunOnboardingModal';
 import { BrandLogo } from '../components/Icons';
 import { LanguageModal } from '../components/LanguageModal';
-import { SystemConfigModal } from '../components/SystemConfigModal';
 import type {
   BillingSummary,
   BootstrapData,
@@ -21,6 +21,7 @@ import { CompareView } from '../views/CompareView';
 import { InpaintCreateView } from '../views/InpaintCreateView';
 import { MonitorView } from '../views/MonitorView';
 import { OverviewView } from '../views/OverviewView';
+import { SettingsView } from '../views/SettingsView';
 import { SubtitleStyleView } from '../views/SubtitleStyleView';
 import { TranslateCreateView } from '../views/TranslateCreateView';
 import { TranslateResultView } from '../views/TranslateResultView';
@@ -38,6 +39,7 @@ const VIEW_TO_NAV: Record<WorkspaceViewId, WorkspaceViewId> = {
   annotate: 'annotate',
   'subtitle-style': 'subtitle-style',
   billing: 'billing',
+  settings: 'settings',
   monitor: 'overview',
   compare: 'overview',
   'translate-result': 'overview',
@@ -101,7 +103,7 @@ export function WorkspacePage({ initialView, onGoHome, onViewChange }: Props) {
 
   const [cmdOpen, setCmdOpen] = useState(false);
   const [langModalOpen, setLangModalOpen] = useState(false);
-  const [sysModalOpen, setSysModalOpen] = useState(false);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [toast, setToast] = useState('');
   const toastTimerRef = useRef<number | null>(null);
   const scrollRef = useRef<HTMLElement>(null);
@@ -142,6 +144,9 @@ export function WorkspacePage({ initialView, onGoHome, onViewChange }: Props) {
         if (data.inpaint_presets.length) {
           setInpaintCfg({ ...data.inpaint_presets[0], targets: [...data.inpaint_presets[0].targets] });
         }
+        if (data.system.is_first_run) {
+          setOnboardingOpen(true);
+        }
       })
       .catch((err) => showToast(`初始化后端连接失败: ${err.message}`));
     refreshAssets();
@@ -160,7 +165,6 @@ export function WorkspacePage({ initialView, onGoHome, onViewChange }: Props) {
       } else if (e.key === 'Escape') {
         setCmdOpen(false);
         setLangModalOpen(false);
-        setSysModalOpen(false);
       }
     };
     window.addEventListener('keydown', onKeyDown);
@@ -241,7 +245,7 @@ export function WorkspacePage({ initialView, onGoHome, onViewChange }: Props) {
               <span>字幕样式</span>
             </button>
 
-            <div className="nav-group-label">账户</div>
+            <div className="nav-group-label">账户与系统</div>
             <button className={`nav-item ${activeNav === 'billing' ? 'active' : ''}`} onClick={() => navigate('billing')}>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <path d="M2.2 13.8h11.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
@@ -250,6 +254,18 @@ export function WorkspacePage({ initialView, onGoHome, onViewChange }: Props) {
                 <rect x="10.4" y="6" width="2.8" height="6" rx="1.1" stroke="currentColor" strokeWidth="1.3" />
               </svg>
               <span>用量账单</span>
+            </button>
+            <button className={`nav-item ${activeNav === 'settings' ? 'active' : ''}`} onClick={() => navigate('settings')}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M2.2 4.2h4.2M9.6 4.2h4.2M2.2 8h7.2M12.4 8h1.4M2.2 11.8h2.4M7.6 11.8h6.2" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" />
+                <circle cx="8" cy="4.2" r="1.5" stroke="currentColor" strokeWidth="1.3" />
+                <circle cx="10.9" cy="8" r="1.5" stroke="currentColor" strokeWidth="1.3" />
+                <circle cx="6.1" cy="11.8" r="1.5" stroke="currentColor" strokeWidth="1.3" />
+              </svg>
+              <span style={{ flex: 1 }}>系统设置</span>
+              {systemConfig && (!systemConfig.has_las_api_key || !systemConfig.has_tos_credentials) && (
+                <span className="nav-setup-badge">待配置</span>
+              )}
             </button>
           </nav>
 
@@ -290,8 +306,8 @@ export function WorkspacePage({ initialView, onGoHome, onViewChange }: Props) {
               </button>
               <button
                 className="env-chip"
-                title="点击查看与配置火山引擎 LAS / TOS 接入环境"
-                onClick={() => setSysModalOpen(true)}
+                title="点击前往「系统设置」管理环境变量"
+                onClick={() => navigate('settings')}
               >
                 <span
                   className="live-dot"
@@ -424,6 +440,18 @@ export function WorkspacePage({ initialView, onGoHome, onViewChange }: Props) {
             )}
 
             {view === 'billing' && <BillingView onToast={showToast} />}
+
+            {view === 'settings' && (
+              <SettingsView
+                config={systemConfig}
+                onUpdated={(next) => {
+                  setSystemConfig(next);
+                  refreshBilling();
+                }}
+                onToast={showToast}
+                onReopenOnboarding={() => setOnboardingOpen(true)}
+              />
+            )}
           </main>
         </div>
       </div>
@@ -448,12 +476,22 @@ export function WorkspacePage({ initialView, onGoHome, onViewChange }: Props) {
         onClose={() => setLangModalOpen(false)}
       />
 
-      <SystemConfigModal
-        open={sysModalOpen}
-        config={systemConfig}
-        onClose={() => setSysModalOpen(false)}
-        onUpdated={setSystemConfig}
-        onToast={showToast}
+      <FirstRunOnboardingModal
+        open={onboardingOpen && view !== 'settings'}
+        onGoToSettings={() => {
+          setOnboardingOpen(false);
+          navigate('settings');
+        }}
+        onSkipWithMock={async () => {
+          try {
+            const next = await api.dismissOnboarding('auto');
+            setSystemConfig(next);
+            setOnboardingOpen(false);
+            showToast('已进入本地仿真体验模式，随时可在左侧「系统设置」配置真实环境变量');
+          } catch (err: any) {
+            showToast(err.message || '初始化失败');
+          }
+        }}
       />
 
       <div className={`toast ${toast ? 'show' : ''}`}>{toast}</div>

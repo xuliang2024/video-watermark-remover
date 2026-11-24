@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { api } from './api/client';
+import { FirstRunOnboardingModal } from './components/FirstRunOnboardingModal';
 import { LandingPage } from './pages/LandingPage';
 import { WorkspacePage } from './pages/WorkspacePage';
 import type { WorkspaceViewId } from './types';
@@ -13,6 +15,7 @@ const VALID_VIEWS: WorkspaceViewId[] = [
   'translate-result',
   'subtitle-style',
   'billing',
+  'settings',
 ];
 
 function parseRoute(): { page: 'landing' | 'workspace'; view: WorkspaceViewId } {
@@ -29,6 +32,7 @@ function parseRoute(): { page: 'landing' | 'workspace'; view: WorkspaceViewId } 
 
 export default function App() {
   const [route, setRoute] = useState(parseRoute);
+  const [landingFirstRun, setLandingFirstRun] = useState(false);
 
   useEffect(() => {
     const sync = () => setRoute(parseRoute());
@@ -39,6 +43,22 @@ export default function App() {
       window.removeEventListener('hashchange', sync);
     };
   }, []);
+
+  useEffect(() => {
+    if (route.page !== 'landing') return;
+    let cancelled = false;
+    api
+      .getSystemConfig()
+      .then((cfg) => {
+        if (!cancelled) setLandingFirstRun(Boolean(cfg.is_first_run));
+      })
+      .catch(() => {
+        // ignore transient network check on landing
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [route.page]);
 
   function enterWorkspace(view: WorkspaceViewId = 'overview') {
     const url = view === 'overview' ? '/workspace' : `/workspace#${view}`;
@@ -66,5 +86,20 @@ export default function App() {
     );
   }
 
-  return <LandingPage onEnterWorkspace={enterWorkspace} />;
+  return (
+    <>
+      <LandingPage onEnterWorkspace={enterWorkspace} />
+      <FirstRunOnboardingModal
+        open={landingFirstRun}
+        onGoToSettings={() => {
+          setLandingFirstRun(false);
+          enterWorkspace('settings');
+        }}
+        onSkipWithMock={async () => {
+          await api.dismissOnboarding('auto');
+          setLandingFirstRun(false);
+        }}
+      />
+    </>
+  );
 }

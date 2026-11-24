@@ -103,7 +103,11 @@ def reset_subtitle_style(db: Session = Depends(get_db)):
 
 @router.get("/api/billing/summary")
 def get_billing_summary(db: Session = Depends(get_db)):
-    records = db.query(BillingRecord).order_by(BillingRecord.id.desc()).all()
+    records = (
+        db.query(BillingRecord)
+        .order_by(BillingRecord.billed_at_str.desc(), BillingRecord.created_at.desc())
+        .all()
+    )
     inpaint_min = sum(r.bill_minutes for r in records if r.job_type == "inpaint")
     inpaint_cost = sum(r.cost_cny for r in records if r.job_type == "inpaint")
     translate_min = sum(r.bill_minutes for r in records if r.job_type == "translate")
@@ -112,8 +116,8 @@ def get_billing_summary(db: Session = Depends(get_db)):
     # Add baseline monthly historical usage so sidebar quota bar matches studio feel
     total_cost = round(inpaint_cost + translate_cost + 154.0, 2)
     total_minutes = round(inpaint_min + translate_min + 1175.0, 1)
-    quota = get_settings().monthly_quota_minutes
     cfg = get_runtime_config()
+    quota = float(cfg["monthly_quota_minutes"])
 
     return {
         "month": "2026 年 11 月",
@@ -146,7 +150,11 @@ def get_billing_summary(db: Session = Depends(get_db)):
 
 @router.get("/api/billing/export")
 def export_billing_csv(db: Session = Depends(get_db)):
-    records = db.query(BillingRecord).order_by(BillingRecord.id.desc()).all()
+    records = (
+        db.query(BillingRecord)
+        .order_by(BillingRecord.billed_at_str.desc(), BillingRecord.created_at.desc())
+        .all()
+    )
     buf = io.StringIO()
     buf.write("\ufeff")
     writer = csv.writer(buf)
