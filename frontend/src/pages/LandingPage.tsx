@@ -116,12 +116,15 @@ export function LandingPage({ onEnterWorkspace }: Props) {
   const [translateTab, setTranslateTab] = useState<'result' | 'translate'>('result');
   const [dubIdx, setDubIdx] = useState(0);
 
-  // Cost calculator state
+  // Cost calculator state (separated Inpaint & Translate)
   const [minutesPerFile, setMinutesPerFile] = useState(8);
   const [fileCount, setFileCount] = useState(4);
-  const [inpaintTier, setInpaintTier] = useState<'none' | 'lite' | 'standard' | 'precise'>('precise');
+  const [inpaintEnabled, setInpaintEnabled] = useState(true);
+  const [inpaintTier, setInpaintTier] = useState<'lite' | 'standard' | 'precise'>('precise');
   const [resolution, setResolution] = useState<'1080p' | '4k'>('1080p');
-  const [translateMode, setTranslateMode] = useState<'none' | 'standard' | 'high_quality'>('high_quality');
+  const [fpsTier, setFpsTier] = useState<'24' | '30' | '60'>('30');
+  const [translateEnabled, setTranslateEnabled] = useState(true);
+  const [translateMode, setTranslateMode] = useState<'standard' | 'high_quality'>('high_quality');
   const [langCount, setLangCount] = useState(3);
 
   const [openFaq, setOpenFaq] = useState<Record<number, boolean>>({});
@@ -191,18 +194,22 @@ export function LandingPage({ onEnterWorkspace }: Props) {
     setSliderPct(Math.max(4, Math.min(96, pct)));
   }
 
-  // Calculator math
+  // Calculator math (separated modules)
   const totalInputMin = minutesPerFile * fileCount;
-  const inpaintPriceMap = { none: 0, lite: 0.5, standard: 1.5, precise: 3.0 };
+  const inpaintPriceMap = { lite: 0.5, standard: 1.5, precise: 3.0 };
+  const inpaintUnit = inpaintPriceMap[inpaintTier];
   const resCoeff = resolution === '4k' ? 2 : 1;
-  const inpaintBillMin = inpaintTier === 'none' ? 0 : totalInputMin * resCoeff;
-  const inpaintCost = inpaintBillMin * inpaintPriceMap[inpaintTier];
+  const fpsCoeff = fpsTier === '24' ? 0.8 : fpsTier === '60' ? 2 : 1;
+  const inpaintBillMin = inpaintEnabled ? totalInputMin * resCoeff * fpsCoeff : 0;
+  const inpaintCost = inpaintBillMin * inpaintUnit;
 
-  const transPriceMap = { none: 0, standard: 1.5, high_quality: 4.0 };
-  const translateEnabled = translateMode !== 'none';
+  const transUnit = translateMode === 'high_quality' ? 4.0 : 1.5;
   const transBillMin = translateEnabled ? totalInputMin * langCount : 0;
-  const transCost = transBillMin * transPriceMap[translateMode];
+  const transCost = transBillMin * transUnit;
+
   const totalPrice = inpaintCost + transCost;
+  const animatedInpaint = useAnimatedNumber(inpaintCost);
+  const animatedTrans = useAnimatedNumber(transCost);
   const animatedTotal = useAnimatedNumber(totalPrice);
 
   const minPct = ((minutesPerFile - 1) / (30 - 1)) * 100;
@@ -305,8 +312,8 @@ export function LandingPage({ onEnterWorkspace }: Props) {
         <div className="hero-ambient" aria-hidden="true"></div>
         <div className="container hero">
           <h1 className="hero-title hero-enter" style={{ animationDelay: '0ms' }}>
-            <span className="hero-title-part">整季无痕去水印，</span>
-            <span className="hero-title-part">直出 31 语成片</span>
+            <span className="hero-title-part">视频无痕去水印，</span>
+            <span className="hero-title-part">一键翻译 31 种语言</span>
           </h1>
           <p className="hero-sub hero-enter" style={{ animationDelay: '60ms' }}>
             批量擦除角标与硬字幕，1:1 复刻原声配音
@@ -750,70 +757,21 @@ export function LandingPage({ onEnterWorkspace }: Props) {
 
       <section className="section alt" id="pricing">
         <div className="container">
-          <div className="section-head" data-reveal>
+          <div className="section-head pricing-head" data-reveal>
             <h2 className="section-title">纯按量计费</h2>
+            <p className="section-sub">修复与翻译独立计价，可单独使用或串联</p>
           </div>
 
-          <div className="pricing-layout" data-reveal>
-            <div className="rate-sheet-card">
-              <div className="rate-group">
-                <div className="rate-group-head">
-                  <span className="rate-dot dot-emerald"></span>
-                  <span className="rate-group-title">视频修复</span>
-                  <span className="rate-group-unit">按输出折算分钟</span>
-                </div>
-                <div className="rate-rows">
-                  <div className="rate-row">
-                    <span className="rate-name">极速版 · 常规中英字幕</span>
-                    <span className="rate-price">¥0.50 / 分</span>
-                  </div>
-                  <div className="rate-row">
-                    <span className="rate-name">标准版 · 无痕文字修复</span>
-                    <span className="rate-price">¥1.50 / 分</span>
-                  </div>
-                  <div className="rate-row">
-                    <span className="rate-name">精准版 · 台标 / 角标 / 花体字</span>
-                    <span className="rate-price">¥3.00 / 分</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rate-group">
-                <div className="rate-group-head">
-                  <span className="rate-dot dot-cobalt"></span>
-                  <span className="rate-group-title">多语翻译</span>
-                  <span className="rate-group-unit">按输入时长 × 语种</span>
-                </div>
-                <div className="rate-rows">
-                  <div className="rate-row">
-                    <span className="rate-name">标准配音 · 音色 / 情感复刻</span>
-                    <span className="rate-price">¥1.50 / 分</span>
-                  </div>
-                  <div className="rate-row">
-                    <span className="rate-name">高质量配音 · 情绪与发音增强</span>
-                    <span className="rate-price">¥4.00 / 分</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rate-footnote mono">
-                折算口径：4K ×2 · &gt;30fps ×2 · 串联去水印母带仅计费一次
-              </div>
-            </div>
-
-            <div className="calc-panel">
-              <div className="calc-head">
-                <span className="calc-title">费用试算</span>
-                <span className="rate-group-unit">30fps 基准</span>
-              </div>
-
-              <div className="calc-group">
+          <div className="calc-shell" data-reveal>
+            {/* 1. Shared Footage Duration Bar */}
+            <div className="calc-footage-bar">
+              <div className="footage-slider-item">
                 <div className="calc-label-row">
                   <span>单集时长</span>
                   <span className="calc-val">{minutesPerFile} 分钟</span>
                 </div>
                 <input
-                  className="calc-range"
+                  className="calc-range range-ivory"
                   type="range"
                   min={1}
                   max={30}
@@ -823,15 +781,13 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                 />
               </div>
 
-              <div className="calc-group">
+              <div className="footage-slider-item">
                 <div className="calc-label-row">
                   <span>文件数量</span>
-                  <span className="calc-val">
-                    {fileCount} 集 · {totalInputMin} 分钟
-                  </span>
+                  <span className="calc-val">{fileCount} 集</span>
                 </div>
                 <input
-                  className="calc-range"
+                  className="calc-range range-ivory"
                   type="range"
                   min={1}
                   max={60}
@@ -841,104 +797,263 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                 />
               </div>
 
-              <div className="calc-group">
-                <div className="calc-label-row">
-                  <span>视频修复</span>
-                </div>
-                <div className="calc-seg">
-                  {(
-                    [
-                      ['none', '不开启'],
-                      ['lite', '极速 ¥0.5'],
-                      ['standard', '标准 ¥1.5'],
-                      ['precise', '精准 ¥3.0'],
-                    ] as const
-                  ).map(([k, lbl]) => (
-                    <button
-                      key={k}
-                      className={`calc-seg-btn ${inpaintTier === k ? 'active' : ''}`}
-                      onClick={() => setInpaintTier(k)}
-                    >
-                      {lbl}
-                    </button>
-                  ))}
-                </div>
+              <div className="footage-total-badge">
+                <span className="footage-total-label">总片长</span>
+                <span className="footage-total-val mono">{totalInputMin} 分钟</span>
               </div>
+            </div>
 
-              <div className="calc-group">
-                <div className="calc-label-row">
-                  <span>输出分辨率</span>
-                </div>
-                <div className="calc-seg cols-2">
+            {/* 2. Separated Inpaint & Translate Modules */}
+            <div className="pricing-modules">
+              {/* Left Module: Video Inpaint */}
+              <div className={`pricing-module module-inpaint ${inpaintEnabled ? '' : 'is-disabled'}`}>
+                <div className="module-head">
+                  <div className="module-title-group">
+                    <div className="module-title-row">
+                      <span className="rate-dot dot-emerald"></span>
+                      <h3 className="module-title">视频修复</h3>
+                    </div>
+                    <span className="module-formula-tag">按输出时长 × 分辨率 × 帧率</span>
+                  </div>
                   <button
-                    className={`calc-seg-btn ${resolution === '1080p' ? 'active' : ''}`}
-                    onClick={() => setResolution('1080p')}
+                    type="button"
+                    role="switch"
+                    aria-checked={inpaintEnabled}
+                    className={`module-switch switch-emerald ${inpaintEnabled ? 'on' : ''}`}
+                    onClick={() => setInpaintEnabled((v) => !v)}
                   >
-                    1080p（×1）
-                  </button>
-                  <button
-                    className={`calc-seg-btn ${resolution === '4k' ? 'active' : ''}`}
-                    onClick={() => setResolution('4k')}
-                  >
-                    4K（×2）
+                    <span className="switch-track">
+                      <span className="switch-thumb"></span>
+                    </span>
+                    <span className="switch-text">{inpaintEnabled ? '已开启' : '跳过'}</span>
                   </button>
                 </div>
+
+                <div className="module-body">
+                  <div className="tier-options" role="radiogroup" aria-label="视频修复档位">
+                    {(
+                      [
+                        ['lite', '极速版', '常规中英字幕', '¥0.50'],
+                        ['standard', '标准版', '无痕文字修复', '¥1.50'],
+                        ['precise', '精准版', '台标 · 角标 · 花体字', '¥3.00'],
+                      ] as const
+                    ).map(([k, name, desc, price]) => {
+                      const active = inpaintEnabled && inpaintTier === k;
+                      return (
+                        <button
+                          key={k}
+                          type="button"
+                          role="radio"
+                          aria-checked={active}
+                          className={`tier-option ${active ? 'active' : ''}`}
+                          onClick={() => {
+                            setInpaintEnabled(true);
+                            setInpaintTier(k);
+                          }}
+                        >
+                          <span className="tier-radio"></span>
+                          <span className="tier-info">
+                            <span className="tier-name">{name}</span>
+                            <span className="tier-desc">{desc}</span>
+                          </span>
+                          <span className="tier-price mono">{price} / 分</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="module-params-grid">
+                    <div className="calc-group">
+                      <div className="calc-label-row">
+                        <span>输出分辨率</span>
+                      </div>
+                      <div className="calc-seg cols-2">
+                        <button
+                          type="button"
+                          className={`calc-seg-btn ${resolution === '1080p' ? 'active' : ''}`}
+                          onClick={() => {
+                            setInpaintEnabled(true);
+                            setResolution('1080p');
+                          }}
+                        >
+                          1080p · ×1
+                        </button>
+                        <button
+                          type="button"
+                          className={`calc-seg-btn ${resolution === '4k' ? 'active' : ''}`}
+                          onClick={() => {
+                            setInpaintEnabled(true);
+                            setResolution('4k');
+                          }}
+                        >
+                          4K · ×2
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="calc-group">
+                      <div className="calc-label-row">
+                        <span>输出帧率</span>
+                      </div>
+                      <div className="calc-seg cols-3">
+                        {(
+                          [
+                            ['24', '24fps ×0.8'],
+                            ['30', '30fps ×1'],
+                            ['60', '60fps ×2'],
+                          ] as const
+                        ).map(([fps, lbl]) => (
+                          <button
+                            key={fps}
+                            type="button"
+                            className={`calc-seg-btn ${fpsTier === fps ? 'active' : ''}`}
+                            onClick={() => {
+                              setInpaintEnabled(true);
+                              setFpsTier(fps);
+                            }}
+                          >
+                            {lbl}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="module-subtotal">
+                  <div className="subtotal-expr mono">
+                    {inpaintEnabled
+                      ? `${totalInputMin}分 × ${resCoeff}(${resolution}) × ${fpsCoeff}(${fpsTier}fps) × ¥${inpaintUnit.toFixed(2)}`
+                      : '已跳过视频修复'}
+                  </div>
+                  <div className="subtotal-val mono">¥{animatedInpaint.toFixed(2)}</div>
+                </div>
               </div>
 
-              <div className="calc-group">
-                <div className="calc-label-row">
-                  <span>多语翻译</span>
+              {/* Right Module: Multi-language Translation */}
+              <div className={`pricing-module module-translate ${translateEnabled ? '' : 'is-disabled'}`}>
+                <div className="module-head">
+                  <div className="module-title-group">
+                    <div className="module-title-row">
+                      <span className="rate-dot dot-cobalt"></span>
+                      <h3 className="module-title">多语翻译</h3>
+                    </div>
+                    <span className="module-formula-tag">按输入时长 × 目标语种</span>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={translateEnabled}
+                    className={`module-switch switch-cobalt ${translateEnabled ? 'on' : ''}`}
+                    onClick={() => setTranslateEnabled((v) => !v)}
+                  >
+                    <span className="switch-track">
+                      <span className="switch-thumb"></span>
+                    </span>
+                    <span className="switch-text">{translateEnabled ? '已开启' : '跳过'}</span>
+                  </button>
                 </div>
-                <div className="calc-seg cols-3">
-                  {(
-                    [
-                      ['none', '不翻译'],
-                      ['standard', '标准 ¥1.5'],
-                      ['high_quality', '高质量 ¥4.0'],
-                    ] as const
-                  ).map(([k, lbl]) => (
-                    <button
-                      key={k}
-                      className={`calc-seg-btn ${translateMode === k ? 'active' : ''}`}
-                      onClick={() => setTranslateMode(k)}
-                    >
-                      {lbl}
-                    </button>
-                  ))}
+
+                <div className="module-body">
+                  <div className="tier-options" role="radiogroup" aria-label="多语翻译档位">
+                    {(
+                      [
+                        ['standard', '标准配音', '音色 / 情感复刻 · 含字幕导出', '¥1.50'],
+                        ['high_quality', '高质量配音', '情绪贴合与发音增强', '¥4.00'],
+                      ] as const
+                    ).map(([k, name, desc, price]) => {
+                      const active = translateEnabled && translateMode === k;
+                      return (
+                        <button
+                          key={k}
+                          type="button"
+                          role="radio"
+                          aria-checked={active}
+                          className={`tier-option ${active ? 'active' : ''}`}
+                          onClick={() => {
+                            setTranslateEnabled(true);
+                            setTranslateMode(k);
+                          }}
+                        >
+                          <span className="tier-radio"></span>
+                          <span className="tier-info">
+                            <span className="tier-name">{name}</span>
+                            <span className="tier-desc">{desc}</span>
+                          </span>
+                          <span className="tier-price mono">{price} / 分</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="calc-group translate-lang-box">
+                    <div className="calc-label-row">
+                      <span>目标语种数量</span>
+                      <span className="calc-val">{langCount} 语种</span>
+                    </div>
+                    <input
+                      className="calc-range range-cobalt"
+                      type="range"
+                      min={1}
+                      max={8}
+                      disabled={!translateEnabled}
+                      value={langCount}
+                      style={{ '--pct': `${langPct}%` } as React.CSSProperties}
+                      onChange={(e) => setLangCount(Number(e.target.value))}
+                    />
+                  </div>
+
+                  <div className="module-hint-bar">
+                    与分辨率、帧率无关 · 串联去水印仅修 1 次母带
+                  </div>
+                </div>
+
+                <div className="module-subtotal">
+                  <div className="subtotal-expr mono">
+                    {translateEnabled
+                      ? `${totalInputMin}分 × ${langCount}语种 × ¥${transUnit.toFixed(2)}`
+                      : '已跳过多语翻译'}
+                  </div>
+                  <div className="subtotal-val mono">¥{animatedTrans.toFixed(2)}</div>
                 </div>
               </div>
+            </div>
 
-              <div className="calc-group" style={{ opacity: translateEnabled ? 1 : 0.38 }}>
-                <div className="calc-label-row">
-                  <span>目标语种</span>
-                  <span className="calc-val">{langCount} 语种</span>
-                </div>
-                <input
-                  className="calc-range range-cobalt"
-                  type="range"
-                  min={1}
-                  max={8}
-                  disabled={!translateEnabled}
-                  value={langCount}
-                  style={{ '--pct': `${langPct}%` } as React.CSSProperties}
-                  onChange={(e) => setLangCount(Number(e.target.value))}
-                />
+            {/* 3. Unified Total Summary Bar */}
+            <div className="calc-summary-bar">
+              <div className="summary-breakdown">
+                <span className="summary-chip">
+                  <span className="rate-dot dot-emerald"></span>
+                  <span>修复</span>
+                  <strong className="mono">{inpaintEnabled ? `¥${animatedInpaint.toFixed(2)}` : '未开启'}</strong>
+                </span>
+                <span className="summary-plus">+</span>
+                <span className="summary-chip">
+                  <span className="rate-dot dot-cobalt"></span>
+                  <span>翻译</span>
+                  <strong className="mono">{translateEnabled ? `¥${animatedTrans.toFixed(2)}` : '未开启'}</strong>
+                </span>
+                {inpaintEnabled && translateEnabled && (
+                  <span className="summary-note">串联母带全语种共用</span>
+                )}
               </div>
 
-              <div className="calc-result-box">
-                <div className="calc-breakdown">
-                  <span>修复 {inpaintTier === 'none' ? '—' : `¥${inpaintCost.toFixed(2)}`}</span>
-                  <span>翻译 {!translateEnabled ? '—' : `¥${transCost.toFixed(2)}`}</span>
-                </div>
-                <div className="calc-total-row">
-                  <span>预计总计</span>
+              <div className="summary-total-action">
+                <div className="summary-total-group">
+                  <span className="summary-total-label">预计总计</span>
                   <span className="calc-total-price">¥{animatedTotal.toFixed(2)}</span>
                 </div>
                 <button
-                  className="btn btn-primary calc-submit-btn"
-                  onClick={() => onEnterWorkspace(translateEnabled ? 'translate' : 'inpaint')}
+                  className="btn btn-primary btn-lg summary-cta-btn"
+                  onClick={() =>
+                    onEnterWorkspace(translateEnabled ? 'translate' : inpaintEnabled ? 'inpaint' : 'overview')
+                  }
                 >
-                  {translateEnabled ? '前往配置多语翻译' : '前往批量去水印'}
+                  {translateEnabled
+                    ? '前往配置多语翻译'
+                    : inpaintEnabled
+                      ? '前往批量去水印'
+                      : '进入工作台'}
                 </button>
               </div>
             </div>
