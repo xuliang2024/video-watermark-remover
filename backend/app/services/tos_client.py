@@ -55,6 +55,110 @@ class TosStorageService:
         cfg = get_runtime_config(draft_overrides)
         return bool(cfg["volc_access_key_id"] and cfg["volc_access_key_secret"] and cfg["tos_bucket"])
 
+    def build_input_object_key(self, asset_id: str, filename: str) -> str:
+        cfg = get_runtime_config()
+        prefix = cfg["tos_input_prefix"].strip("/")
+        return f"{prefix}/{asset_id}/{filename}"
+
+    def build_tos_uri(self, object_key: str) -> str | None:
+        cfg = get_runtime_config()
+        bucket = cfg["tos_bucket"]
+        if not bucket:
+            return None
+        return f"tos://{bucket}/{object_key.lstrip('/')}"
+
+    def presign_put_object(self, object_key: str, *, expires: int = 7200) -> str | None:
+        client, bucket = self._get_client()
+        if not client or not bucket:
+            return None
+        try:
+            import tos  # type: ignore
+
+            out = client.pre_signed_url(
+                tos.HttpMethodType.Http_Method_Put,
+                bucket=bucket,
+                key=object_key,
+                expires=expires,
+            )
+            return out.signed_url
+        except Exception as exc:
+            logger.error("Failed to presign PUT for %s: %s", object_key, exc)
+            return None
+
+    def create_multipart_upload(self, object_key: str, *, content_type: str | None = None) -> str | None:
+        client, bucket = self._get_client()
+        if not client or not bucket:
+            return None
+        try:
+            kwargs: dict[str, Any] = {}
+            if content_type:
+                kwargs["content_type"] = content_type
+            out = client.create_multipart_upload(bucket, object_key, **kwargs)
+            return out.upload_id
+        except Exception as exc:
+            logger.error("Failed to create multipart upload for %s: %s", object_key, exc)
+            return None
+
+    def presign_upload_part(
+        self,
+        object_key: str,
+        upload_id: str,
+        part_number: int,
+        *,
+        expires: int = 7200,
+    ) -> str | None:
+        client, bucket = self._get_client()
+        if not client or not bucket:
+            return None
+        try:
+            import tos  # type: ignore
+
+            out = client.pre_signed_url(
+                tos.HttpMethodType.Http_Method_Put,
+                bucket=bucket,
+                key=object_key,
+                expires=expires,
+                query={"partNumber": str(part_number), "uploadId": upload_id},
+            )
+            return out.signed_url
+        except Exception as exc:
+            logger.error("Failed to presign part %s for %s: %s", part_number, object_key, exc)
+            return None
+
+    def complete_multipart_upload(
+        self,
+        object_key: str,
+        upload_id: str,
+        parts: list[dict[str, Any]],
+    ) -> bool:
+        client, bucket = self._get_client()
+        if not client or not bucket:
+            return False
+        try:
+            import tos  # type: ignore
+
+            sorted_parts = sorted(parts, key=lambda p: int(p["part_number"]))
+            uploaded = [
+                tos.models2.UploadedPart(part_number=int(p["part_number"]), etag=str(p["etag"]).strip())
+                for p in sorted_parts
+            ]
+            client.complete_multipart_upload(bucket, object_key, upload_id, parts=uploaded)
+            return True
+        except Exception as exc:
+            logger.error("Failed to complete multipart upload for %s: %s", object_key, exc)
+            return False
+
+    def abort_multipart_upload(self, object_key: str, upload_id: str) -> bool:
+        client, bucket = self._get_client()
+        if not client or not bucket:
+            return False
+        try:
+            client.abort_multipart_upload(bucket, object_key, upload_id)
+            return True
+        except Exception as exc:
+            logger.warning("Failed to abort multipart upload for %s: %s", object_key, exc)
+            return False
+
     def upload_input_video(
         self,
         local_path: Path,

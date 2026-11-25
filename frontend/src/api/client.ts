@@ -44,6 +44,32 @@ export interface ServerUploadProgress {
   error: string | null;
 }
 
+export interface DirectUploadPartSpec {
+  part_number: number;
+  url: string;
+}
+
+export interface DirectUploadInitResponse {
+  mode: 'proxy' | 'single_put' | 'multipart';
+  session_id?: string;
+  asset_id?: string;
+  part_size?: number;
+  part_count?: number;
+  upload_url?: string | null;
+  parts?: DirectUploadPartSpec[];
+}
+
+export interface DirectUploadCompletedPart {
+  part_number: number;
+  etag: string;
+}
+
+export interface ClientVideoMetaHint {
+  width?: number;
+  height?: number;
+  duration_sec?: number;
+}
+
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, {
     headers: {
@@ -115,6 +141,43 @@ export const api = {
 
   getUploadProgress: (uploadId: string) =>
     request<ServerUploadProgress>(`/api/assets/upload-progress/${encodeURIComponent(uploadId)}`),
+
+  initDirectUpload: (payload: {
+    filename: string;
+    size_bytes: number;
+    content_type: string;
+    purpose: 'inpaint' | 'translate';
+  }) =>
+    request<DirectUploadInitResponse>('/api/assets/direct-upload/init', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  signDirectUploadParts: (sessionId: string, partNumbers: number[]) =>
+    request<{ session_id: string; parts: DirectUploadPartSpec[] }>('/api/assets/direct-upload/sign-parts', {
+      method: 'POST',
+      body: JSON.stringify({ session_id: sessionId, part_numbers: partNumbers }),
+    }),
+
+  completeDirectUpload: (
+    sessionId: string,
+    parts: DirectUploadCompletedPart[],
+    clientMeta?: ClientVideoMetaHint
+  ) =>
+    request<{ items: MediaAsset[] }>('/api/assets/direct-upload/complete', {
+      method: 'POST',
+      body: JSON.stringify({
+        session_id: sessionId,
+        parts,
+        ...(clientMeta ? { client_meta: clientMeta } : {}),
+      }),
+    }),
+
+  abortDirectUpload: (sessionId: string) =>
+    request<{ aborted: boolean }>('/api/assets/direct-upload/abort', {
+      method: 'POST',
+      body: JSON.stringify({ session_id: sessionId }),
+    }),
 
   uploadAssetWithProgress: (
     file: File,

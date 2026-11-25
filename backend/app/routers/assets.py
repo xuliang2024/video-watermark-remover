@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import asyncio
+import math
 from pathlib import Path
 from typing import Literal
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from ..config import get_settings
@@ -20,9 +22,58 @@ from ..services.media import (
     sanitize_filename,
 )
 from ..services.tos_client import tos_service
-from ..services.upload_progress import upload_progress_tracker
+from ..services.upload_progress import direct_upload_sessions, upload_progress_tracker
 
 router = APIRouter(prefix="/api/assets", tags=["assets"])
+
+MAX_UPLOAD_BYTES = 10 * 1024**3
+MULTIPART_THRESHOLD_BYTES = 16 * 1024 * 1024  # <= 16 MiB single presigned PUT; > 16 MiB multipart
+DEFAULT_PART_SIZE_BYTES = 16 * 1024 * 1024
+MAX_TOS_PARTS = 9000
+
+
+class DirectUploadInitRequest(BaseModel):
+    filename: str = Field(..., min_length=1, max_length=255)
+    size_bytes: int = Field(..., ge=1, le=MAX_UPLOAD_BYTES)
+    content_type: str = Field(default="video/mp4", max_length=128)
+    purpose: Literal["inpaint", "translate"] = "inpaint"
+
+
+class DirectUploadSignPartsRequest(BaseModel):
+    session_id: str = Field(..., min_length=4, max_length=80)
+    part_numbers: list[int] = Field(..., min_length=1, max_length=200)
+
+
+class DirectUploadPartItem(BaseModel):
+    part_number: int = Field(..., ge=1, le=10000)
+    etag: str = Field(..., min_length=1, max_length=256)
+
+
+class ClientVideoMetaHint(BaseModel):
+    width: int | None = None
+    height: int | None = None
+    duration_sec: float | None = None
+
+
+class DirectUploadCompleteRequest(BaseModel):
+    session_id: str = Field(..., min_length=4, max_length=80)
+    parts: list[DirectUploadPartItem] = Field(default_factory=list)
+    client_meta: ClientVideoMetaHint | None = None
+
+
+class DirectUploadAbortRequest(BaseModel):
+    session_id: str = Field(..., min_length=4, max_length=80)
+
+
+def _compute_part_plan(size_bytes: int) -> tuple[int, int]:
+    part_size = DEFAULT_PART_SIZE_BYTES
+    part_count = max(1, math.ceil(size_bytes / part_size))
+    if part_count > MAX_TOS_PARTS:
+        raw_part = math.ceil(size_bytes / MAX_TOS_PARTS)
+        step = 4 * 1024 * 1024
+        part_size = math.ceil(raw_part / step) * step
+        part_count = math.ceil(size_bytes / part_size)
+    return part_size, part_count
 
 
 def serialize_asset(a: MediaAsset) -> dict:
@@ -62,6 +113,213 @@ def list_assets(
 @router.get("/upload-progress/{upload_id}")
 def get_upload_progress(upload_id: str):
     return upload_progress_tracker.get(upload_id)
+
+
+@router.post("/direct-upload/init")
+async def init_direct_upload(body: DirectUploadInitRequest):
+    orig_name = sanitize_filename(body.filename)
+    ext = Path(orig_name).suffix.lower() or ".mp4"
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"文件 {orig_name} 格式不支持，仅支持 {', '.join(sorted(ALLOWED_EXTENSIONS))}",
+        )
+
+    if not tos_service.is_configured():
+        return {"mode": "proxy"}
+
+    asset_id = new_id("inf" if body.purpose == "inpaint" else "trf")
+    object_key = tos_service.build_input_object_key(asset_id, orig_name)
+    tos_uri = tos_service.build_tos_uri(object_key)
+    if not tos_uri:
+        return {"mode": "proxy"}
+
+    session_id = new_id("dus")
+
+    if body.size_bytes <= MULTIPART_THRESHOLD_BYTES:
+        upload_url = await asyncio.to_thread(tos_service.presign_put_object, object_key, expires=7200)
+        if not upload_url:
+            raise HTTPException(status_code=502, detail="云端对象存储签名失败，请稍后重试")
+        direct_upload_sessions.create(
+            session_id,
+            {
+                "asset_id": asset_id,
+                "filename": orig_name,
+                "purpose": body.purpose,
+                "object_key": object_key,
+                "tos_uri": tos_uri,
+                "size_bytes": body.size_bytes,
+                "mode": "single_put",
+                "tos_upload_id": None,
+                "part_size": body.size_bytes,
+                "part_count": 1,
+            },
+        )
+        return {
+            "mode": "single_put",
+            "session_id": session_id,
+            "asset_id": asset_id,
+            "part_size": body.size_bytes,
+            "part_count": 1,
+            "upload_url": upload_url,
+            "parts": [],
+        }
+
+    part_size, part_count = _compute_part_plan(body.size_bytes)
+    tos_upload_id = await asyncio.to_thread(
+        tos_service.create_multipart_upload,
+        object_key,
+        content_type=body.content_type or "video/mp4",
+    )
+    if not tos_upload_id:
+        raise HTTPException(status_code=502, detail="初始化云端分片上传失败，请稍后重试")
+
+    def _sign_all_parts() -> list[dict]:
+        signed: list[dict] = []
+        for pnum in range(1, part_count + 1):
+            u = tos_service.presign_upload_part(object_key, tos_upload_id, pnum, expires=7200)
+            if not u:
+                raise RuntimeError(f"failed to presign part {pnum}")
+            signed.append({"part_number": pnum, "url": u})
+        return signed
+
+    try:
+        parts = await asyncio.to_thread(_sign_all_parts)
+    except Exception:
+        await asyncio.to_thread(tos_service.abort_multipart_upload, object_key, tos_upload_id)
+        raise HTTPException(status_code=502, detail="生成云端分片签名失败，请稍后重试")
+
+    direct_upload_sessions.create(
+        session_id,
+        {
+            "asset_id": asset_id,
+            "filename": orig_name,
+            "purpose": body.purpose,
+            "object_key": object_key,
+            "tos_uri": tos_uri,
+            "size_bytes": body.size_bytes,
+            "mode": "multipart",
+            "tos_upload_id": tos_upload_id,
+            "part_size": part_size,
+            "part_count": part_count,
+        },
+    )
+    return {
+        "mode": "multipart",
+        "session_id": session_id,
+        "asset_id": asset_id,
+        "part_size": part_size,
+        "part_count": part_count,
+        "upload_url": None,
+        "parts": parts,
+    }
+
+
+@router.post("/direct-upload/sign-parts")
+async def sign_direct_upload_parts(body: DirectUploadSignPartsRequest):
+    sess = direct_upload_sessions.get(body.session_id)
+    if not sess or sess.get("mode") != "multipart" or not sess.get("tos_upload_id"):
+        raise HTTPException(status_code=404, detail="上传会话不存在或已过期，请重新上传")
+
+    max_part = int(sess["part_count"])
+    valid_nums = sorted({int(n) for n in body.part_numbers if 1 <= int(n) <= max_part})
+    if not valid_nums:
+        raise HTTPException(status_code=400, detail="无效的分片编号")
+
+    def _sign_requested() -> list[dict]:
+        signed: list[dict] = []
+        for pnum in valid_nums:
+            u = tos_service.presign_upload_part(sess["object_key"], sess["tos_upload_id"], pnum, expires=7200)
+            if not u:
+                raise RuntimeError(f"failed to presign part {pnum}")
+            signed.append({"part_number": pnum, "url": u})
+        return signed
+
+    try:
+        parts = await asyncio.to_thread(_sign_requested)
+    except Exception:
+        raise HTTPException(status_code=502, detail="刷新分片签名失败，请稍后重试")
+    return {"session_id": body.session_id, "parts": parts}
+
+
+@router.post("/direct-upload/complete")
+async def complete_direct_upload(
+    body: DirectUploadCompleteRequest,
+    db: Session = Depends(get_db),
+):
+    sess = direct_upload_sessions.get(body.session_id)
+    if not sess:
+        raise HTTPException(status_code=404, detail="上传会话不存在或已完成")
+
+    object_key = sess["object_key"]
+    tos_uri = sess["tos_uri"]
+
+    if sess["mode"] == "multipart":
+        expected_parts = int(sess["part_count"])
+        if len(body.parts) != expected_parts:
+            raise HTTPException(
+                status_code=400,
+                detail=f"分片数量不完整（收到 {len(body.parts)}/{expected_parts} 片）",
+            )
+        part_payload = [{"part_number": p.part_number, "etag": p.etag} for p in body.parts]
+        ok = await asyncio.to_thread(
+            tos_service.complete_multipart_upload,
+            object_key,
+            sess["tos_upload_id"],
+            part_payload,
+        )
+        if not ok:
+            raise HTTPException(status_code=502, detail="云端分片合并失败，请重试")
+
+    actual_size = await asyncio.to_thread(tos_service.head_tos_uri, tos_uri)
+    if actual_size is None or actual_size <= 0:
+        raise HTTPException(status_code=400, detail="云端未检测到已上传的视频文件，请重新上传")
+
+    signed_get_url = await asyncio.to_thread(tos_service.presign_tos_uri, tos_uri, expires=600)
+    client_hint = body.client_meta.model_dump(exclude_none=True) if body.client_meta else None
+
+    if signed_get_url:
+        meta, thumb_url = await asyncio.gather(
+            asyncio.to_thread(probe_video_metadata, signed_get_url, actual_size, client_hint),
+            asyncio.to_thread(extract_thumbnail, signed_get_url, sess["asset_id"]),
+        )
+    else:
+        meta = probe_video_metadata("", actual_size, client_hint)
+        thumb_url = "/media/sample/frame_16x9.png"
+
+    direct_upload_sessions.pop(body.session_id)
+
+    asset = MediaAsset(
+        id=sess["asset_id"],
+        filename=sess["filename"],
+        purpose=sess["purpose"],
+        local_path=None,
+        tos_uri=tos_uri,
+        video_url=tos_uri,
+        thumbnail_url=thumb_url,
+        width=meta["width"],
+        height=meta["height"],
+        fps=meta["fps"],
+        duration_sec=meta["duration_sec"],
+        frames=meta["frames"],
+        size_bytes=actual_size,
+        detected_lang="中文（简体）",
+        detected_lang_code="zh-CN",
+        is_sample=False,
+    )
+    db.add(asset)
+    db.commit()
+    return {"items": [serialize_asset(asset)]}
+
+
+@router.post("/direct-upload/abort")
+async def abort_direct_upload(body: DirectUploadAbortRequest):
+    sess = direct_upload_sessions.pop(body.session_id)
+    if not sess:
+        return {"aborted": False}
+    if sess.get("mode") == "multipart" and sess.get("tos_upload_id"):
+        await asyncio.to_thread(tos_service.abort_multipart_upload, sess["object_key"], sess["tos_upload_id"])
+    return {"aborted": True}
 
 
 @router.post("/upload")

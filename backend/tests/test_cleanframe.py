@@ -560,3 +560,121 @@ def test_upload_progress_tracking_and_tos_callback(client: TestClient):
     assert bad_prog["error"]
 
 
+def test_direct_tos_upload_single_multipart_and_fallback(client: TestClient):
+    # 1) Without TOS configured, init returns proxy fallback mode
+    fb = client.post(
+        "/api/assets/direct-upload/init",
+        json={"filename": "demo.mp4", "size_bytes": 1024 * 1024, "purpose": "inpaint"},
+    )
+    assert fb.status_code == 200
+    assert fb.json()["mode"] == "proxy"
+
+    # 2) Single PUT flow (<= 16 MiB)
+    with patch("app.routers.assets.tos_service.is_configured", return_value=True), patch(
+        "app.routers.assets.tos_service.build_tos_uri", side_effect=lambda k: f"tos://mock-bucket/{k}"
+    ), patch(
+        "app.routers.assets.tos_service.presign_put_object", return_value="https://mock-tos.local/single-put"
+    ), patch(
+        "app.routers.assets.tos_service.head_tos_uri", return_value=4 * 1024 * 1024
+    ), patch(
+        "app.routers.assets.tos_service.presign_tos_uri", return_value=None
+    ):
+        init_s = client.post(
+            "/api/assets/direct-upload/init",
+            json={"filename": "短片_01.mp4", "size_bytes": 4 * 1024 * 1024, "purpose": "inpaint"},
+        )
+        assert init_s.status_code == 200, init_s.text
+        s_data = init_s.json()
+        assert s_data["mode"] == "single_put"
+        assert s_data["upload_url"] == "https://mock-tos.local/single-put"
+
+        comp_s = client.post(
+            "/api/assets/direct-upload/complete",
+            json={
+                "session_id": s_data["session_id"],
+                "parts": [],
+                "client_meta": {"width": 1080, "height": 1920, "duration_sec": 62.5},
+            },
+        )
+        assert comp_s.status_code == 200, comp_s.text
+        item = comp_s.json()["items"][0]
+        assert item["name"] == "短片_01.mp4"
+        assert item["width"] == 1080 and item["height"] == 1920
+        assert item["duration_sec"] == pytest.approx(62.5, abs=0.1)
+        assert item["tos_uri"].startswith("tos://mock-bucket/")
+
+    # 3) Multipart flow (> 16 MiB, e.g., 40 MiB -> 3 parts) + sign-parts + complete + abort
+    complete_calls = []
+    abort_calls = []
+
+    def _fake_complete(object_key, upload_id, parts):
+        complete_calls.append((object_key, upload_id, parts))
+        return True
+
+    def _fake_abort(object_key, upload_id):
+        abort_calls.append((object_key, upload_id))
+        return True
+
+    with patch("app.routers.assets.tos_service.is_configured", return_value=True), patch(
+        "app.routers.assets.tos_service.build_tos_uri", side_effect=lambda k: f"tos://mock-bucket/{k}"
+    ), patch(
+        "app.routers.assets.tos_service.create_multipart_upload", return_value="tos-mp-upload-123"
+    ), patch(
+        "app.routers.assets.tos_service.presign_upload_part",
+        side_effect=lambda key, uid, pnum, expires=7200: f"https://mock-tos.local/part/{pnum}?uid={uid}",
+    ), patch(
+        "app.routers.assets.tos_service.complete_multipart_upload", side_effect=_fake_complete
+    ), patch(
+        "app.routers.assets.tos_service.abort_multipart_upload", side_effect=_fake_abort
+    ), patch(
+        "app.routers.assets.tos_service.head_tos_uri", return_value=40 * 1024 * 1024
+    ), patch(
+        "app.routers.assets.tos_service.presign_tos_uri", return_value=None
+    ):
+        init_m = client.post(
+            "/api/assets/direct-upload/init",
+            json={"filename": "母猪师尊 EP01.mp4", "size_bytes": 40 * 1024 * 1024, "purpose": "inpaint"},
+        )
+        assert init_m.status_code == 200, init_m.text
+        m_data = init_m.json()
+        assert m_data["mode"] == "multipart"
+        assert m_data["part_count"] == 3
+        assert len(m_data["parts"]) == 3
+
+        # Refresh part 2 signature
+        re_sign = client.post(
+            "/api/assets/direct-upload/sign-parts",
+            json={"session_id": m_data["session_id"], "part_numbers": [2]},
+        )
+        assert re_sign.status_code == 200
+        assert re_sign.json()["parts"][0]["part_number"] == 2
+
+        # Complete with 3 ETags
+        comp_m = client.post(
+            "/api/assets/direct-upload/complete",
+            json={
+                "session_id": m_data["session_id"],
+                "parts": [
+                    {"part_number": 1, "etag": '"etag-1"'},
+                    {"part_number": 2, "etag": '"etag-2"'},
+                    {"part_number": 3, "etag": '"etag-3"'},
+                ],
+                "client_meta": {"width": 1920, "height": 1080, "duration_sec": 300.0},
+            },
+        )
+        assert comp_m.status_code == 200, comp_m.text
+        assert len(complete_calls) == 1
+        assert comp_m.json()["items"][0]["name"] == "母猪师尊 EP01.mp4"
+
+        # Test abort cleans up cloud multipart upload
+        init_ab = client.post(
+            "/api/assets/direct-upload/init",
+            json={"filename": "aborted.mp4", "size_bytes": 40 * 1024 * 1024, "purpose": "translate"},
+        ).json()
+        ab = client.post("/api/assets/direct-upload/abort", json={"session_id": init_ab["session_id"]})
+        assert ab.status_code == 200
+        assert ab.json()["aborted"] is True
+        assert len(abort_calls) == 1
+
+
+

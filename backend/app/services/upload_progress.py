@@ -173,3 +173,56 @@ class UploadProgressTracker:
 
 
 upload_progress_tracker = UploadProgressTracker()
+
+DIRECT_SESSION_TTL_SECONDS = 4 * 3600.0
+DIRECT_SESSION_MAX_ENTRIES = 1000
+
+
+class DirectUploadSessionStore:
+    """Thread-safe store binding direct-to-TOS upload sessions to server-authorized object keys."""
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._sessions: dict[str, dict[str, Any]] = {}
+
+    def _prune_locked(self, now: float) -> None:
+        expired = [k for k, v in self._sessions.items() if now - v["created_at"] > DIRECT_SESSION_TTL_SECONDS]
+        for k in expired:
+            self._sessions.pop(k, None)
+        if len(self._sessions) > DIRECT_SESSION_MAX_ENTRIES:
+            ordered = sorted(self._sessions.items(), key=lambda item: item[1]["created_at"])
+            for k, _ in ordered[: len(self._sessions) - DIRECT_SESSION_MAX_ENTRIES]:
+                self._sessions.pop(k, None)
+
+    def create(self, session_id: str, data: dict[str, Any]) -> dict[str, Any]:
+        now = time.monotonic()
+        entry = {**data, "session_id": session_id, "created_at": now}
+        with self._lock:
+            self._prune_locked(now)
+            self._sessions[session_id] = entry
+        return dict(entry)
+
+    def get(self, session_id: str, *, tenant_id: str | None = None) -> dict[str, Any] | None:
+        now = time.monotonic()
+        with self._lock:
+            self._prune_locked(now)
+            entry = self._sessions.get(session_id)
+            if not entry:
+                return None
+            if tenant_id is not None and entry.get("tenant_id") and entry["tenant_id"] != tenant_id:
+                return None
+            return dict(entry)
+
+    def pop(self, session_id: str, *, tenant_id: str | None = None) -> dict[str, Any] | None:
+        now = time.monotonic()
+        with self._lock:
+            self._prune_locked(now)
+            entry = self._sessions.get(session_id)
+            if not entry:
+                return None
+            if tenant_id is not None and entry.get("tenant_id") and entry["tenant_id"] != tenant_id:
+                return None
+            return dict(self._sessions.pop(session_id))
+
+
+direct_upload_sessions = DirectUploadSessionStore()

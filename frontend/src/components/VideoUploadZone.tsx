@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api, UploadCancelledError } from '../api/client';
 import { formatBytes, formatEta, formatSpeed } from '../utils/calc';
+import { uploadVideoSmart } from '../utils/directUpload';
 import { CheckIcon, CloseIcon } from './Icons';
 
 export interface VideoUploadZoneProps {
@@ -29,6 +30,9 @@ interface UploadQueueItem {
   speedBps: number;
   etaSec: number | null;
   serverStageLabel: string;
+  uploadMode?: 'direct' | 'proxy';
+  completedParts?: number;
+  totalParts?: number;
   tosConsumedBytes: number;
   tosTotalBytes: number;
   tosPercent: number;
@@ -312,42 +316,65 @@ export function VideoUploadZone({
     );
 
     try {
-      await api.uploadAssetWithProgress(target.file, purpose, {
+      await uploadVideoSmart(target.file, purpose, {
         uploadId: target.uploadId,
         signal: controller.signal,
+        onModeResolved: (mode, totalParts) => {
+          syncQueue((prev) =>
+            prev.map((item) =>
+              item.localId === localId
+                ? {
+                    ...item,
+                    uploadMode: mode,
+                    completedParts: 0,
+                    totalParts,
+                  }
+                : item
+            )
+          );
+        },
         onProgress: (ev) => {
           syncQueue((prev) =>
             prev.map((item) =>
               item.localId === localId && item.status === 'uploading'
                 ? {
                     ...item,
+                    uploadMode: ev.mode,
                     loadedBytes: ev.loaded,
                     totalBytes: ev.total,
                     uploadPercent: ev.percent,
                     speedBps: ev.speedBps,
                     etaSec: ev.etaSec,
+                    completedParts: ev.completedParts,
+                    totalParts: ev.totalParts,
                   }
                 : item
             )
           );
         },
-        onTransferComplete: () => {
+        onTransferComplete: (mode) => {
           syncQueue((prev) =>
             prev.map((item) =>
               item.localId === localId && item.status === 'uploading'
                 ? {
                     ...item,
                     status: 'probing',
+                    uploadMode: mode,
                     loadedBytes: item.totalBytes || item.sizeBytes,
                     uploadPercent: 100,
                     speedBps: 0,
                     etaSec: null,
-                    serverStageLabel: '正在解析视频元信息与封面',
+                    serverStageLabel:
+                      mode === 'direct' && (item.totalParts || 1) > 1
+                        ? '正在合并云端分片并解析元信息'
+                        : '正在解析视频元信息与封面',
                   }
                 : item
             )
           );
-          startServerProgressPolling(localId, target.uploadId);
+          if (mode === 'proxy') {
+            startServerProgressPolling(localId, target.uploadId);
+          }
         },
       });
 
@@ -643,7 +670,7 @@ export function VideoUploadZone({
       case 'queued':
         return <span className="uq-badge queued">排队中</span>;
       case 'uploading':
-        return <span className="uq-badge uploading">上传中</span>;
+        return <span className="uq-badge uploading">{item.uploadMode === 'direct' ? '直传云端' : '上传中'}</span>;
       case 'probing':
         return <span className="uq-badge processing">解析元信息</span>;
       case 'cloud_sync':
@@ -662,7 +689,11 @@ export function VideoUploadZone({
       case 'queued':
         return <span className="uq-telemetry">{formatBytes(item.sizeBytes)} · 等待队列</span>;
       case 'uploading': {
-        const parts = [`${formatBytes(item.loadedBytes)} / ${formatBytes(item.sizeBytes)}`];
+        const parts: string[] = [];
+        if (item.uploadMode === 'direct' && item.totalParts && item.totalParts > 1) {
+          parts.push(`分片 ${item.completedParts ?? 0}/${item.totalParts}`);
+        }
+        parts.push(`${formatBytes(item.loadedBytes)} / ${formatBytes(item.sizeBytes)}`);
         if (item.speedBps > 0) parts.push(formatSpeed(item.speedBps));
         return (
           <span className="uq-telemetry">
@@ -674,7 +705,10 @@ export function VideoUploadZone({
       case 'probing':
         return (
           <span className="uq-telemetry">
-            <span>{formatBytes(item.sizeBytes)} · ffprobe 解析中</span>
+            <span>
+              {formatBytes(item.sizeBytes)} ·{' '}
+              {item.uploadMode === 'direct' && (item.totalParts || 1) > 1 ? '合并分片并解析中' : 'ffprobe 解析中'}
+            </span>
           </span>
         );
       case 'cloud_sync':
@@ -945,7 +979,7 @@ export function VideoUploadZone({
       ) : (
         <>
           {renderQueueContent()}
-          <div className="uq-drop-foot">支持继续拖入视频文件或文件夹追加到上传队列 · 最多 2 路并发传输</div>
+          <div className="uq-drop-foot">支持继续拖入视频文件或文件夹追加到上传队列 · 分片并发直传云端存储，断片自动重试</div>
         </>
       )}
     </div>
