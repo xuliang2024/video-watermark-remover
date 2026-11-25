@@ -116,16 +116,16 @@ export function LandingPage({ onEnterWorkspace }: Props) {
   const [translateTab, setTranslateTab] = useState<'result' | 'translate'>('result');
   const [dubIdx, setDubIdx] = useState(0);
 
-  // Cost calculator state (separated Inpaint & Translate)
-  const [minutesPerFile, setMinutesPerFile] = useState(8);
-  const [fileCount, setFileCount] = useState(4);
+  // Cost calculator state (separated Inpaint & Translate, lowest-price defaults)
+  const [minutesPerFile, setMinutesPerFile] = useState(1);
+  const [fileCount, setFileCount] = useState(1);
   const [inpaintEnabled, setInpaintEnabled] = useState(true);
-  const [inpaintTier, setInpaintTier] = useState<'lite' | 'standard' | 'precise'>('precise');
+  const [inpaintTier, setInpaintTier] = useState<'lite' | 'standard' | 'precise'>('lite');
   const [resolution, setResolution] = useState<'1080p' | '4k'>('1080p');
-  const [fpsTier, setFpsTier] = useState<'24' | '30' | '60'>('30');
+  const [fpsTier, setFpsTier] = useState<'24' | '30' | '60'>('24');
   const [translateEnabled, setTranslateEnabled] = useState(true);
-  const [translateMode, setTranslateMode] = useState<'standard' | 'high_quality'>('high_quality');
-  const [langCount, setLangCount] = useState(3);
+  const [translateMode, setTranslateMode] = useState<'standard' | 'high_quality'>('standard');
+  const [langCount, setLangCount] = useState(1);
 
   const [openFaq, setOpenFaq] = useState<Record<number, boolean>>({});
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
