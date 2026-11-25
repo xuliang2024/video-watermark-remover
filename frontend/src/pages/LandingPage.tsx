@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BrandLogo } from '../components/Icons';
 import type { WorkspaceViewId } from '../types';
 
@@ -41,37 +41,80 @@ const HERO_MODES = {
   },
 };
 
+const DUB_SAMPLES = [
+  { code: 'EN', label: '英语', voice: '原声复刻 · 0.98× 语速', line: "I won't wait for you anymore.", langClass: '' },
+  { code: 'JA', label: '日语', voice: '原声复刻 · NotoSansJP', line: 'もう、あなたを待たない。', langClass: 'lang-ja' },
+  { code: 'KO', label: '韩语', voice: '原声复刻 · NotoSansKR', line: '더는 당신을 기다리지 않을게요.', langClass: 'lang-ko' },
+  { code: 'ES', label: '西语', voice: '情感配音 · 字幕同步', line: 'Ya no voy a esperarte más.', langClass: '' },
+] as const;
+
 const FAQ_ITEMS = [
   {
-    q: '需要懂技术或自己配置云存储吗？',
-    a: '不需要。直接从电脑多选文件或拖入整个文件夹上传，排队、进度轮询与打包下载均在工作台内自动完成。',
+    q: '需要配置对象存储或写脚本吗？',
+    a: '不需要。本地多选或拖入整季文件夹即可上传，排队、轮询与打包下载均在工作台内完成。',
   },
   {
-    q: '极速版、专业标准版和精准版怎么选？',
-    a: '常规中英字幕且重性价比选极速版（¥0.50/分）；追求无痕文字修复选标准版（¥1.50/分）；含图片台标、动态角标或花体字选精准版（¥3.00/分）。',
+    q: '极速、标准和精准三档怎么选？',
+    a: '常规中英字幕选极速版（¥0.50/分）；高质量文字修复选标准版（¥1.50/分）；含图片台标或动态角标选精准版（¥3.00/分）。',
   },
   {
-    q: '50/60fps 高帧率视频为什么建议限制 30fps 输出？',
-    a: '修复计费在 30fps 内系数为 1.0，高于 30fps 按 2 倍系数折算。短剧与课程保持 30fps 输出观感一致，费用直接省半。',
+    q: '高帧率视频为什么建议限制 30fps？',
+    a: '30fps 以内计费系数为 1.0，高于 30fps 按 2 倍折算。保持 30fps 输出画质观感一致且费用省半。',
   },
   {
-    q: '同一部剧的角标在固定位置，如何避免误擦？',
-    a: '在「区域标注」中框选角标区域并设定生效起止秒数，保存为模板后一键套用整季剧集，仅处理框内画面。',
-  },
-  {
-    q: '处理后的成片与字幕下载链接保留多久？',
-    a: '视频修复成片保留 24 小时，多语翻译产物（视频、字幕、纯人声）保留 3 天，批次完成后建议及时打包归档。',
+    q: '处理后的视频与字幕保留多久？',
+    a: '去水印成片保留 24 小时，多语翻译成片与字幕保留 3 天，批次完成后建议及时下载归档。',
   },
 ];
+
+function useAnimatedNumber(target: number, duration = 260) {
+  const [display, setDisplay] = useState(target);
+  const currentRef = useRef(target);
+
+  useEffect(() => {
+    const startVal = currentRef.current;
+    if (Math.abs(target - startVal) < 0.005) {
+      currentRef.current = target;
+      setDisplay(target);
+      return;
+    }
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      currentRef.current = target;
+      setDisplay(target);
+      return;
+    }
+    let raf = 0;
+    const startTime = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - startTime) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      const next = startVal + (target - startVal) * eased;
+      currentRef.current = next;
+      setDisplay(next);
+      if (t < 1) {
+        raf = requestAnimationFrame(tick);
+      } else {
+        currentRef.current = target;
+      }
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+
+  return display;
+}
 
 export function LandingPage({ onEnterWorkspace }: Props) {
   const [heroMode, setHeroMode] = useState<keyof typeof HERO_MODES>('wipe');
   const [sliderPct, setSliderPct] = useState(54);
+  const [autoSweep, setAutoSweep] = useState(true);
+  const [stageHovered, setStageHovered] = useState(false);
   const [dragging, setDragging] = useState(false);
   const compareRef = useRef<HTMLDivElement>(null);
 
   const [inpaintTab, setInpaintTab] = useState<'inpaint' | 'annotate'>('inpaint');
   const [translateTab, setTranslateTab] = useState<'result' | 'translate'>('result');
+  const [dubIdx, setDubIdx] = useState(0);
 
   // Cost calculator state
   const [minutesPerFile, setMinutesPerFile] = useState(8);
@@ -81,10 +124,64 @@ export function LandingPage({ onEnterWorkspace }: Props) {
   const [translateMode, setTranslateMode] = useState<'none' | 'standard' | 'high_quality'>('high_quality');
   const [langCount, setLangCount] = useState(3);
 
-  const [openFaq, setOpenFaq] = useState<Record<number, boolean>>({ 0: true });
+  const [openFaq, setOpenFaq] = useState<Record<number, boolean>>({});
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   const heroCfg = HERO_MODES[heroMode];
+  const activeDub = DUB_SAMPLES[dubIdx];
+
+  // Subtle idle wipe sweep on hero stage until user interacts
+  useEffect(() => {
+    if (heroMode !== 'wipe' || !autoSweep || stageHovered || dragging) return;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+
+    let raf = 0;
+    let start: number | null = null;
+    const step = (now: number) => {
+      if (start === null) start = now;
+      const elapsed = (now - start) / 1000;
+      const pct = 48 + Math.sin(elapsed * 1.1) * 24;
+      setSliderPct(pct);
+      raf = requestAnimationFrame(step);
+    };
+    const timer = window.setTimeout(() => {
+      raf = requestAnimationFrame(step);
+    }, 450);
+
+    return () => {
+      window.clearTimeout(timer);
+      cancelAnimationFrame(raf);
+    };
+  }, [heroMode, autoSweep, stageHovered, dragging]);
+
+  // Scroll-triggered reveal for lower sections
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const targets = Array.from(root.querySelectorAll<HTMLElement>('[data-reveal]'));
+    if (!targets.length) return;
+
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) {
+      targets.forEach((el) => el.classList.add('is-visible'));
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.08, rootMargin: '0px 0px -24px 0px' },
+    );
+
+    targets.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
 
   function updateSliderFromClientX(clientX: number) {
     const el = compareRef.current;
@@ -106,9 +203,14 @@ export function LandingPage({ onEnterWorkspace }: Props) {
   const transBillMin = translateEnabled ? totalInputMin * langCount : 0;
   const transCost = transBillMin * transPriceMap[translateMode];
   const totalPrice = inpaintCost + transCost;
+  const animatedTotal = useAnimatedNumber(totalPrice);
+
+  const minPct = ((minutesPerFile - 1) / (30 - 1)) * 100;
+  const countPct = ((fileCount - 1) / (60 - 1)) * 100;
+  const langPct = ((langCount - 1) / (8 - 1)) * 100;
 
   return (
-    <div className="landing-root">
+    <div className="landing-root" ref={rootRef}>
       <header className="site-header">
         <div className="container header-inner">
           <a className="site-brand" href="#top">
@@ -200,13 +302,17 @@ export function LandingPage({ onEnterWorkspace }: Props) {
       </header>
 
       <section className="hero-section" id="top">
+        <div className="hero-ambient" aria-hidden="true"></div>
         <div className="container hero">
-          <h1 className="hero-title">
-            整季视频无痕去水印，<span className="hero-title-tail">直出 31 语种成片</span>
+          <h1 className="hero-title hero-enter" style={{ animationDelay: '0ms' }}>
+            <span className="hero-title-part">整季无痕去水印，</span>
+            <span className="hero-title-part">直出 31 语成片</span>
           </h1>
-          <p className="hero-sub">批量擦除角标与硬字幕，1:1 复刻原声音色并烧录多语字幕</p>
+          <p className="hero-sub hero-enter" style={{ animationDelay: '60ms' }}>
+            批量擦除角标与硬字幕，1:1 复刻原声配音
+          </p>
 
-          <div className="hero-ctas">
+          <div className="hero-ctas hero-enter" style={{ animationDelay: '120ms' }}>
             <button className="btn btn-primary btn-lg" onClick={() => onEnterWorkspace('overview')}>
               <span>进入工作台</span>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -219,25 +325,25 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                 />
               </svg>
             </button>
-            <a className="btn btn-ghost btn-lg" href="#pricing">
-              试算处理成本
+            <a className="btn btn-ivory btn-lg" href="#pricing">
+              试算成本
             </a>
           </div>
 
-          <div className="hero-stage-wrap">
+          <div className="hero-stage-wrap hero-enter" style={{ animationDelay: '180ms' }}>
             <div className="stage-chrome">
               <div className="stage-file-meta">
                 <span className="stage-status-dot"></span>
-                <span>00:01:14:08 · S01E01_雨夜来客.mp4 · 1080p</span>
+                <span>00:01:14:08 · S01E01_雨夜来客.mp4</span>
               </div>
 
               <div className="stage-mode-tabs" role="tablist" aria-label="效果预览模式">
                 {(
                   [
                     ['wipe', '擦除对比'],
-                    ['en-US', '英语成片'],
-                    ['ja-JP', '日语成片'],
-                    ['ko-KR', '韩语成片'],
+                    ['en-US', '英语'],
+                    ['ja-JP', '日语'],
+                    ['ko-KR', '韩语'],
                   ] as const
                 ).map(([mode, label]) => (
                   <button
@@ -259,8 +365,11 @@ export function LandingPage({ onEnterWorkspace }: Props) {
               ref={compareRef}
               className={`hero-compare ${heroCfg.isTranslate ? 'translate-mode' : ''} ${dragging ? 'dragging' : ''}`}
               aria-label="左右拖动对比去水印效果"
+              onMouseEnter={() => setStageHovered(true)}
+              onMouseLeave={() => setStageHovered(false)}
               onPointerDown={(e) => {
                 if (heroCfg.isTranslate) return;
+                setAutoSweep(false);
                 setDragging(true);
                 e.currentTarget.setPointerCapture(e.pointerId);
                 updateSliderFromClientX(e.clientX);
@@ -286,20 +395,19 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                   </svg>
                   <span>星野视频</span>
                 </div>
-                <div className="hero-orig-subtitle">我不会再等你了</div>
+                <div className="hero-orig-subtitle">
+                  <span>我不会再等你了</span>
+                </div>
               </div>
 
-              <div className="hero-translated-overlay">
+              <div className="hero-translated-overlay" key={heroMode}>
                 <div className="hero-dub-pill">
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                    <path
-                      d="M2.5 8h2l1.8-4 2.4 8 2-5.5 1.3 1.5h1.5"
-                      stroke="currentColor"
-                      strokeWidth="1.4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
+                  <span className="voice-bars" aria-hidden="true">
+                    <i></i>
+                    <i></i>
+                    <i></i>
+                    <i></i>
+                  </span>
                   <span>{heroCfg.badge}</span>
                 </div>
                 <div className={`hero-burned-caption ${heroCfg.langClass}`}>{heroCfg.caption}</div>
@@ -326,65 +434,115 @@ export function LandingPage({ onEnterWorkspace }: Props) {
       </section>
 
       <section className="metrics-section">
-        <div className="container metrics-grid">
+        <div className="container metrics-grid" data-reveal>
           <div className="metric-item">
-            <div className="metric-num">4K / 3h</div>
-            <div className="metric-desc">单文件上限 · 最高 10 GB</div>
+            <div className="metric-num">
+              <span className="metric-dot dot-emerald"></span>
+              <span>4K / 3h</span>
+            </div>
+            <div className="metric-desc">单文件上限 · 10 GB</div>
           </div>
           <div className="metric-item">
-            <div className="metric-num">31 语种</div>
-            <div className="metric-desc">25 种源语识别 · 原声配音</div>
+            <div className="metric-num">
+              <span className="metric-dot dot-cobalt"></span>
+              <span>31 语种</span>
+            </div>
+            <div className="metric-desc">原声复刻配音与字幕</div>
           </div>
           <div className="metric-item">
-            <div className="metric-num">200 集</div>
-            <div className="metric-desc">整季文件夹直传 · 10 路并发</div>
+            <div className="metric-num">
+              <span className="metric-dot dot-amber"></span>
+              <span>200 集</span>
+            </div>
+            <div className="metric-desc">整季文件夹 10 路并发</div>
           </div>
           <div className="metric-item">
-            <div className="metric-num">¥0.50 / 分</div>
-            <div className="metric-desc">按量结算 · 提交前透明预估</div>
+            <div className="metric-num">
+              <span className="metric-dot dot-ivory"></span>
+              <span>¥0.50/分</span>
+            </div>
+            <div className="metric-desc">按量结算 · 透明预估</div>
           </div>
         </div>
       </section>
 
       <section className="section" id="workflow">
         <div className="container">
-          <div className="section-head">
-            <h2 className="section-title">三步跑完清洗、译制与交付</h2>
-            <p className="section-sub">拖入本地文件夹即可自动排队，无需脚本与逐集手工遮罩</p>
+          <div className="section-head" data-reveal>
+            <h2 className="section-title">三步直出成片</h2>
           </div>
 
           <div className="steps-grid">
-            <div className="step-card">
+            <div className="step-card" data-reveal style={{ '--stagger': '0ms' } as React.CSSProperties}>
+              <div className="step-visual visual-upload" aria-hidden="true">
+                <div className="mini-file-row">
+                  <span className="mini-file-dot"></span>
+                  <span className="mini-file-name">S01E01_雨夜来客.mp4</span>
+                  <span className="mini-file-meta">1080p</span>
+                </div>
+                <div className="mini-file-row active">
+                  <span className="mini-file-dot"></span>
+                  <span className="mini-file-name">S01E02_灯下无声.mp4</span>
+                  <span className="mini-file-meta">30fps</span>
+                </div>
+                <div className="mini-file-row">
+                  <span className="mini-file-dot"></span>
+                  <span className="mini-file-name">S01E03_旧信.mp4</span>
+                  <span className="mini-file-meta">4K</span>
+                </div>
+              </div>
               <div className="step-top">
                 <span className="step-num">01</span>
                 <button className="step-jump" onClick={() => onEnterWorkspace('inpaint')}>
                   进入上传 ↗
                 </button>
               </div>
-              <h3 className="step-title">批量导入原片</h3>
-              <p className="step-desc">多选文件或直接拖入整季文件夹，自动解析分辨率、帧率与高帧率省费建议</p>
+              <h3 className="step-title">拖入整季原片</h3>
+              <p className="step-desc">自动识别分辨率与高帧率省费项</p>
             </div>
 
-            <div className="step-card">
+            <div className="step-card" data-reveal style={{ '--stagger': '70ms' } as React.CSSProperties}>
+              <div className="step-visual visual-reticle" aria-hidden="true">
+                <div className="mini-frame">
+                  <div className="mini-bbox bbox-emerald">角标</div>
+                  <div className="mini-bbox bbox-amber">片头</div>
+                  <div className="mini-bbox bbox-cobalt">硬字幕</div>
+                  <div className="mini-scan-line"></div>
+                </div>
+              </div>
               <div className="step-top">
                 <span className="step-num">02</span>
                 <button className="step-jump" onClick={() => onEnterWorkspace('annotate')}>
                   区域标注 ↗
                 </button>
               </div>
-              <h3 className="step-title">套用擦除方案</h3>
-              <p className="step-desc">全自动识别动态角标与硬字幕，或手动画框设定生效时段并存为整季模板</p>
+              <h3 className="step-title">套用擦除模板</h3>
+              <p className="step-desc">全自动检测或按秒框选固定角标</p>
             </div>
 
-            <div className="step-card">
+            <div className="step-card" data-reveal style={{ '--stagger': '140ms' } as React.CSSProperties}>
+              <div className="step-visual visual-tracks" aria-hidden="true">
+                <div className="mini-track">
+                  <span className="track-lang">EN</span>
+                  <span className="track-bar track-cobalt"></span>
+                </div>
+                <div className="mini-track">
+                  <span className="track-lang">JA</span>
+                  <span className="track-bar track-emerald"></span>
+                </div>
+                <div className="mini-track">
+                  <span className="track-lang">KO</span>
+                  <span className="track-bar track-amber"></span>
+                </div>
+              </div>
               <div className="step-top">
                 <span className="step-num">03</span>
                 <button className="step-jump" onClick={() => onEnterWorkspace('monitor')}>
                   批次监控 ↗
                 </button>
               </div>
-              <h3 className="step-title">核验打包成片</h3>
-              <p className="step-desc">后台队列并行轮询，网页内拉动滑块抽检画质、核对多语字幕并一键下载</p>
+              <h3 className="step-title">并行渲染交付</h3>
+              <p className="step-desc">网页内滑块抽检并一键打包下载</p>
             </div>
           </div>
         </div>
@@ -392,30 +550,29 @@ export function LandingPage({ onEnterWorkspace }: Props) {
 
       <section className="section alt" id="features">
         <div className="container">
-          <div className="section-head">
-            <h2 className="section-title">双引擎串联，同一工作台闭环</h2>
-            <p className="section-sub">可单独批量去水印，也可先生成干净母带再并行渲染多国成片</p>
+          <div className="section-head" data-reveal>
+            <h2 className="section-title">双引擎，同一工作台串联</h2>
           </div>
 
           <div className="features-stack">
-            <div className="feature-row">
+            <div className="feature-row" data-reveal>
               <div className="feature-copy">
-                <span className="feature-index">01 · 视频无痕修复</span>
-                <h3 className="feature-title">擦除角标与硬字幕，复杂背景自然还原</h3>
-                <dl className="feature-specs">
-                  <div className="feature-spec-row">
-                    <dt>三档画质</dt>
-                    <dd>常规字幕极速 ¥0.50/分，复杂台标与花体字精准识别</dd>
-                  </div>
-                  <div className="feature-spec-row">
-                    <dt>时段框选</dt>
-                    <dd>按秒指定生效区间，其余画面零改动，模板整季复用</dd>
-                  </div>
-                  <div className="feature-spec-row">
-                    <dt>字幕保护</dt>
-                    <dd>仅擦角标时自动避开底部台词区域，防止误伤</dd>
-                  </div>
-                </dl>
+                <span className="feature-tag tag-emerald">01 · 视频无痕修复</span>
+                <h3 className="feature-title">精准抹除角标、台标与硬字幕</h3>
+                <ul className="feature-points">
+                  <li>
+                    <span className="point-key">三档算力</span>
+                    <span className="point-val">极速 ¥0.50/分起，精准识别花体字与动态台标</span>
+                  </li>
+                  <li>
+                    <span className="point-key">时段框选</span>
+                    <span className="point-val">按秒控制生效区间，模板一键复用全季</span>
+                  </li>
+                  <li>
+                    <span className="point-key">字幕保护</span>
+                    <span className="point-val">只擦角标时自动避让底部台词区域</span>
+                  </li>
+                </ul>
                 <div>
                   <button className="btn btn-ghost" onClick={() => onEnterWorkspace('inpaint')}>
                     <span>新建修复任务</span>
@@ -432,7 +589,7 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                 </div>
               </div>
 
-              <div className="screen-showcase">
+              <div className="screen-showcase showcase-emerald">
                 <div className="showcase-bar">
                   <div className="showcase-tabs">
                     <button
@@ -445,15 +602,17 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                       className={`showcase-tab ${inpaintTab === 'annotate' ? 'active' : ''}`}
                       onClick={() => setInpaintTab('annotate')}
                     >
-                      区域标注时间轴
+                      区域时间轴标注
                     </button>
                   </div>
                   <button className="stage-open-link" onClick={() => onEnterWorkspace(inpaintTab)}>
-                    打开界面 ↗
+                    体验界面 ↗
                   </button>
                 </div>
                 <div className="showcase-frame">
                   <img
+                    key={inpaintTab}
+                    className="showcase-img"
                     src={inpaintTab === 'inpaint' ? '/assets/screens/screen-inpaint.png' : '/assets/screens/screen-annotate.png'}
                     alt="净影视频修复工作台界面"
                   />
@@ -461,8 +620,8 @@ export function LandingPage({ onEnterWorkspace }: Props) {
               </div>
             </div>
 
-            <div className="feature-row reverse">
-              <div className="screen-showcase">
+            <div className="feature-row reverse" data-reveal>
+              <div className="screen-showcase showcase-cobalt">
                 <div className="showcase-bar">
                   <div className="showcase-tabs">
                     <button
@@ -482,34 +641,59 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                     className="stage-open-link"
                     onClick={() => onEnterWorkspace(translateTab === 'result' ? 'translate-result' : 'translate')}
                   >
-                    打开界面 ↗
+                    体验界面 ↗
                   </button>
                 </div>
                 <div className="showcase-frame">
                   <img
+                    key={translateTab}
+                    className="showcase-img"
                     src={translateTab === 'result' ? '/assets/screens/screen-result.png' : '/assets/screens/screen-translate.png'}
                     alt="净影多语成片结果界面"
                   />
                 </div>
+                <div className="dub-interactive-dock">
+                  <div className="dub-dock-langs" role="tablist" aria-label="试看多语字幕">
+                    {DUB_SAMPLES.map((item, idx) => (
+                      <button
+                        key={item.code}
+                        className={`dub-lang-chip ${dubIdx === idx ? 'active' : ''}`}
+                        onClick={() => setDubIdx(idx)}
+                      >
+                        {item.code}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="dub-dock-preview" key={activeDub.code}>
+                    <span className="voice-bars bars-cobalt" aria-hidden="true">
+                      <i></i>
+                      <i></i>
+                      <i></i>
+                      <i></i>
+                    </span>
+                    <span className={`dub-dock-line ${activeDub.langClass}`}>{activeDub.line}</span>
+                    <span className="dub-dock-voice">{activeDub.voice}</span>
+                  </div>
+                </div>
               </div>
 
               <div className="feature-copy">
-                <span className="feature-index">02 · 多语配音译制</span>
-                <h3 className="feature-title">复刻原说话人声线，一次提交多语出片</h3>
-                <dl className="feature-specs">
-                  <div className="feature-spec-row">
-                    <dt>声线与节奏</dt>
-                    <dd>1:1 还原音色情绪，动态微调语速对齐口型画面</dd>
-                  </div>
-                  <div className="feature-spec-row">
-                    <dt>多格式字幕</dt>
-                    <dd>按语种匹配专属字体烧录，同步导出 SRT / ASS / VTT</dd>
-                  </div>
-                  <div className="feature-spec-row">
-                    <dt>母带零重复</dt>
-                    <dd>串联去水印仅计费一次，31 语种共用同一份干净底片</dd>
-                  </div>
-                </dl>
+                <span className="feature-tag tag-cobalt">02 · 多语配音译制</span>
+                <h3 className="feature-title">1:1 复刻音色，一次提交多语出片</h3>
+                <ul className="feature-points">
+                  <li>
+                    <span className="point-key">声线节奏</span>
+                    <span className="point-val">保留说话人情绪与音色，动态对齐语速</span>
+                  </li>
+                  <li>
+                    <span className="point-key">字幕烧录</span>
+                    <span className="point-val">匹配语种字体，同步导出 SRT / ASS / VTT</span>
+                  </li>
+                  <li>
+                    <span className="point-key">母带复用</span>
+                    <span className="point-val">去水印底片全语种共用，不重复扣费</span>
+                  </li>
+                </ul>
                 <div>
                   <button className="btn btn-ghost" onClick={() => onEnterWorkspace('translate')}>
                     <span>新建翻译任务</span>
@@ -532,27 +716,33 @@ export function LandingPage({ onEnterWorkspace }: Props) {
 
       <section className="section" id="scenarios">
         <div className="container">
-          <div className="section-head">
-            <h2 className="section-title">适配高频批量视频场景</h2>
+          <div className="section-head" data-reveal>
+            <h2 className="section-title">适用场景</h2>
           </div>
 
-          <div className="scenarios-strip">
-            <article className="scenario-col">
-              <h3 className="scenario-title">短剧出海</h3>
-              <p className="scenario-desc">批量擦除平台角标与中文硬字幕，保留人物情绪复刻英、日、韩、西语配音与发行字幕</p>
-              <div className="scenario-recipe">精准修复 + 高质量配音</div>
+          <div className="scenarios-strip" data-reveal>
+            <article className="scenario-col accent-emerald">
+              <div className="scenario-top">
+                <span className="scenario-label">短剧出海</span>
+                <span className="scenario-badge">精准 + 高质量</span>
+              </div>
+              <p className="scenario-desc">批量擦除角标与硬字幕，多语配音直出海外版本</p>
             </article>
 
-            <article className="scenario-col">
-              <h3 className="scenario-title">课程与内训</h3>
-              <p className="scenario-desc">支持单集 3–4 小时录播视频，去除旧机构标识并输出多语种配音与标准字幕轨</p>
-              <div className="scenario-recipe">固定区域模板 + 音色还原</div>
+            <article className="scenario-col accent-cobalt">
+              <div className="scenario-top">
+                <span className="scenario-label">课程内训</span>
+                <span className="scenario-badge">固定框 + 音色还原</span>
+              </div>
+              <p className="scenario-desc">支持 3–4 小时长视频去标与多语种标准字幕输出</p>
             </article>
 
-            <article className="scenario-col">
-              <h3 className="scenario-title">跨境投放素材</h3>
-              <p className="scenario-desc">快速清洗历史爆款广告旧字幕与活动角标，一稿裂变多国语种版本测试海外市场</p>
-              <div className="scenario-recipe">极速修复 + 情感复刻</div>
+            <article className="scenario-col accent-amber">
+              <div className="scenario-top">
+                <span className="scenario-label">跨境投放</span>
+                <span className="scenario-badge">极速 + 情感复刻</span>
+              </div>
+              <p className="scenario-desc">清洗爆款广告旧字幕与水印，快速裂变多国素材</p>
             </article>
           </div>
         </div>
@@ -560,73 +750,61 @@ export function LandingPage({ onEnterWorkspace }: Props) {
 
       <section className="section alt" id="pricing">
         <div className="container">
-          <div className="section-head">
-            <h2 className="section-title">纯按量计费，提交前透明预估</h2>
-            <p className="section-sub">无套餐捆绑，按实际处理分钟数结算</p>
+          <div className="section-head" data-reveal>
+            <h2 className="section-title">纯按量计费</h2>
           </div>
 
-          <div className="pricing-layout">
-            <div className="pricing-cards-col">
-              <div className="price-card">
-                <div className="price-card-head">
-                  <span className="price-card-title">视频修复</span>
-                  <span className="price-card-meta">按输出折算分钟</span>
+          <div className="pricing-layout" data-reveal>
+            <div className="rate-sheet-card">
+              <div className="rate-group">
+                <div className="rate-group-head">
+                  <span className="rate-dot dot-emerald"></span>
+                  <span className="rate-group-title">视频修复</span>
+                  <span className="rate-group-unit">按输出折算分钟</span>
                 </div>
-                <div className="price-tier-list">
-                  <div className="price-tier-row">
-                    <div>
-                      <div className="price-tier-name">极速版</div>
-                      <div className="price-tier-sub">常规中英字幕 · 1080p ×1，4K ×2</div>
-                    </div>
-                    <span className="price-tier-val">¥0.50 / 分</span>
+                <div className="rate-rows">
+                  <div className="rate-row">
+                    <span className="rate-name">极速版 · 常规中英字幕</span>
+                    <span className="rate-price">¥0.50 / 分</span>
                   </div>
-                  <div className="price-tier-row">
-                    <div>
-                      <div className="price-tier-name">专业标准版</div>
-                      <div className="price-tier-sub">无痕文字修复 · 720p 享 0.6 折</div>
-                    </div>
-                    <span className="price-tier-val">¥1.50 / 分</span>
+                  <div className="rate-row">
+                    <span className="rate-name">标准版 · 无痕文字修复</span>
+                    <span className="rate-price">¥1.50 / 分</span>
                   </div>
-                  <div className="price-tier-row">
-                    <div>
-                      <div className="price-tier-name">专业精准版</div>
-                      <div className="price-tier-sub">图片台标、动态角标与复杂花体字</div>
-                    </div>
-                    <span className="price-tier-val">¥3.00 / 分</span>
+                  <div className="rate-row">
+                    <span className="rate-name">精准版 · 台标 / 角标 / 花体字</span>
+                    <span className="rate-price">¥3.00 / 分</span>
                   </div>
                 </div>
-                <p className="price-rule-note">帧率折算：≤24fps 为 0.8，24–30fps 为 1.0，高于 30fps 按 ⌈fps/30⌉ 计</p>
               </div>
 
-              <div className="price-card">
-                <div className="price-card-head">
-                  <span className="price-card-title">多语翻译</span>
-                  <span className="price-card-meta">按输入时长 × 语种数</span>
+              <div className="rate-group">
+                <div className="rate-group-head">
+                  <span className="rate-dot dot-cobalt"></span>
+                  <span className="rate-group-title">多语翻译</span>
+                  <span className="rate-group-unit">按输入时长 × 语种</span>
                 </div>
-                <div className="price-tier-list">
-                  <div className="price-tier-row">
-                    <div>
-                      <div className="price-tier-name">标准配音（音色 / 情感复刻）</div>
-                      <div className="price-tier-sub">含音色复刻、字幕翻译与多格式字幕导出</div>
-                    </div>
-                    <span className="price-tier-val">¥1.50 / 分</span>
+                <div className="rate-rows">
+                  <div className="rate-row">
+                    <span className="rate-name">标准配音 · 音色 / 情感复刻</span>
+                    <span className="rate-price">¥1.50 / 分</span>
                   </div>
-                  <div className="price-tier-row">
-                    <div>
-                      <div className="price-tier-name">高质量配音</div>
-                      <div className="price-tier-sub">更高情感贴合度与发音准确度</div>
-                    </div>
-                    <span className="price-tier-val">¥4.00 / 分</span>
+                  <div className="rate-row">
+                    <span className="rate-name">高质量配音 · 情绪与发音增强</span>
+                    <span className="rate-price">¥4.00 / 分</span>
                   </div>
                 </div>
-                <p className="price-rule-note">串联「先去水印再翻译」时，干净母带仅收一次修复费并供全部语种复用</p>
+              </div>
+
+              <div className="rate-footnote mono">
+                折算口径：4K ×2 · &gt;30fps ×2 · 串联去水印母带仅计费一次
               </div>
             </div>
 
             <div className="calc-panel">
               <div className="calc-head">
                 <span className="calc-title">费用试算</span>
-                <span className="price-card-meta">默认 30fps 基准</span>
+                <span className="rate-group-unit">30fps 基准</span>
               </div>
 
               <div className="calc-group">
@@ -640,6 +818,7 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                   min={1}
                   max={30}
                   value={minutesPerFile}
+                  style={{ '--pct': `${minPct}%` } as React.CSSProperties}
                   onChange={(e) => setMinutesPerFile(Number(e.target.value))}
                 />
               </div>
@@ -648,7 +827,7 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                 <div className="calc-label-row">
                   <span>文件数量</span>
                   <span className="calc-val">
-                    {fileCount} 集 · 共 {totalInputMin} 分钟
+                    {fileCount} 集 · {totalInputMin} 分钟
                   </span>
                 </div>
                 <input
@@ -657,6 +836,7 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                   min={1}
                   max={60}
                   value={fileCount}
+                  style={{ '--pct': `${countPct}%` } as React.CSSProperties}
                   onChange={(e) => setFileCount(Number(e.target.value))}
                 />
               </div>
@@ -669,9 +849,9 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                   {(
                     [
                       ['none', '不开启'],
-                      ['lite', '极速 ¥0.50'],
-                      ['standard', '标准 ¥1.50'],
-                      ['precise', '精准 ¥3.00'],
+                      ['lite', '极速 ¥0.5'],
+                      ['standard', '标准 ¥1.5'],
+                      ['precise', '精准 ¥3.0'],
                     ] as const
                   ).map(([k, lbl]) => (
                     <button
@@ -687,7 +867,7 @@ export function LandingPage({ onEnterWorkspace }: Props) {
 
               <div className="calc-group">
                 <div className="calc-label-row">
-                  <span>输出画质</span>
+                  <span>输出分辨率</span>
                 </div>
                 <div className="calc-seg cols-2">
                   <button
@@ -713,8 +893,8 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                   {(
                     [
                       ['none', '不翻译'],
-                      ['standard', '标准 ¥1.50'],
-                      ['high_quality', '高质量 ¥4.00'],
+                      ['standard', '标准 ¥1.5'],
+                      ['high_quality', '高质量 ¥4.0'],
                     ] as const
                   ).map(([k, lbl]) => (
                     <button
@@ -728,44 +908,37 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                 </div>
               </div>
 
-              <div className="calc-group" style={{ opacity: translateEnabled ? 1 : 0.4 }}>
+              <div className="calc-group" style={{ opacity: translateEnabled ? 1 : 0.38 }}>
                 <div className="calc-label-row">
                   <span>目标语种</span>
                   <span className="calc-val">{langCount} 语种</span>
                 </div>
                 <input
-                  className="calc-range"
+                  className="calc-range range-cobalt"
                   type="range"
                   min={1}
                   max={8}
                   disabled={!translateEnabled}
                   value={langCount}
+                  style={{ '--pct': `${langPct}%` } as React.CSSProperties}
                   onChange={(e) => setLangCount(Number(e.target.value))}
                 />
               </div>
 
               <div className="calc-result-box">
                 <div className="calc-breakdown">
-                  <span>视频修复</span>
-                  <span className="mono">
-                    {inpaintTier === 'none' ? '—' : `¥${inpaintCost.toFixed(2)}（${inpaintBillMin} 分）`}
-                  </span>
-                </div>
-                <div className="calc-breakdown">
-                  <span>多语翻译</span>
-                  <span className="mono">
-                    {!translateEnabled ? '—' : `¥${transCost.toFixed(2)}（${totalInputMin} 分 × ${langCount}）`}
-                  </span>
+                  <span>修复 {inpaintTier === 'none' ? '—' : `¥${inpaintCost.toFixed(2)}`}</span>
+                  <span>翻译 {!translateEnabled ? '—' : `¥${transCost.toFixed(2)}`}</span>
                 </div>
                 <div className="calc-total-row">
                   <span>预计总计</span>
-                  <span className="calc-total-price">¥{totalPrice.toFixed(2)}</span>
+                  <span className="calc-total-price">¥{animatedTotal.toFixed(2)}</span>
                 </div>
                 <button
                   className="btn btn-primary calc-submit-btn"
                   onClick={() => onEnterWorkspace(translateEnabled ? 'translate' : 'inpaint')}
                 >
-                  {translateEnabled ? '进入工作台配置多语翻译' : '进入工作台批量去水印'}
+                  {translateEnabled ? '前往配置多语翻译' : '前往批量去水印'}
                 </button>
               </div>
             </div>
@@ -774,10 +947,10 @@ export function LandingPage({ onEnterWorkspace }: Props) {
       </section>
 
       <section className="section" id="faq">
-        <div className="container faq-layout">
+        <div className="container faq-layout" data-reveal>
           <div className="faq-intro">
             <h2 className="section-title">常见问题</h2>
-            <p className="section-sub">关于上传方式、计费折算与成片归档的说明</p>
+            <p className="section-sub">上传、计费与成片保留</p>
           </div>
 
           <div className="faq-list">
@@ -785,6 +958,7 @@ export function LandingPage({ onEnterWorkspace }: Props) {
               <div className={`faq-item ${openFaq[idx] ? 'open' : ''}`} key={idx}>
                 <button
                   className="faq-q"
+                  aria-expanded={Boolean(openFaq[idx])}
                   onClick={() => setOpenFaq((prev) => ({ ...prev, [idx]: !prev[idx] }))}
                 >
                   <span>{item.q}</span>
@@ -798,7 +972,9 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                     />
                   </svg>
                 </button>
-                <div className="faq-a">{item.a}</div>
+                <div className="faq-a-wrap">
+                  <div className="faq-a">{item.a}</div>
+                </div>
               </div>
             ))}
           </div>
@@ -806,10 +982,9 @@ export function LandingPage({ onEnterWorkspace }: Props) {
       </section>
 
       <section className="final-cta-section">
-        <div className="container final-cta-bar">
+        <div className="container final-cta-bar" data-reveal>
           <div className="final-cta-copy">
-            <h2 className="final-cta-title">把下一季成片拖进工作台，今天交付多语版本</h2>
-            <p className="final-cta-sub">本地文件夹直传，提交前逐笔看清折算费用</p>
+            <h2 className="final-cta-title">拖入整季素材，当天交付多语版本</h2>
           </div>
           <div className="final-cta-actions">
             <button className="btn btn-primary btn-lg" onClick={() => onEnterWorkspace('overview')}>
@@ -824,52 +999,29 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                 />
               </svg>
             </button>
-            <button className="btn btn-ghost btn-lg" onClick={() => onEnterWorkspace('translate')}>
-              新建翻译任务
+            <button className="btn btn-ivory btn-lg" onClick={() => onEnterWorkspace('translate')}>
+              新建翻译
             </button>
           </div>
         </div>
       </section>
 
       <footer className="site-footer">
-        <div className="container footer-grid">
-          <div>
+        <div className="container footer-inner">
+          <div className="footer-brand-col">
             <a className="site-brand" href="#top">
-              <BrandLogo size={24} />
+              <BrandLogo size={22} />
               <span className="brand-name">净影</span>
             </a>
-            <p className="footer-tagline">面向短剧出海与影视后期团队的批量视频修复与多语译制工作台</p>
+            <span className="footer-note">批量视频无痕修复与多语译制工作台</span>
           </div>
 
-          <div className="footer-col">
-            <h4>核心能力</h4>
-            <ul>
-              <li><a href="#features">无痕去水印与硬字幕</a></li>
-              <li><a href="#features">固定区域时间轴标注</a></li>
-              <li><a href="#features">31 语种原声复刻配音</a></li>
-              <li><a href="#pricing">按量计费与成本试算</a></li>
-            </ul>
-          </div>
-
-          <div className="footer-col">
-            <h4>直达工作台</h4>
-            <ul>
-              <li><button onClick={() => onEnterWorkspace('overview')}>任务总览</button></li>
-              <li><button onClick={() => onEnterWorkspace('inpaint')}>新建修复任务</button></li>
-              <li><button onClick={() => onEnterWorkspace('translate')}>新建翻译任务</button></li>
-              <li><button onClick={() => onEnterWorkspace('annotate')}>区域标注模板</button></li>
-              <li><button onClick={() => onEnterWorkspace('subtitle-style')}>字幕样式库</button></li>
-            </ul>
-          </div>
-
-          <div className="footer-col">
-            <h4>支持规格</h4>
-            <ul>
-              <li><span>格式：mp4 / mov / avi / mkv</span></li>
-              <li><span>上限：4K · 10 GB · 3–4 小时</span></li>
-              <li><span>字幕：SRT / ASS / VTT 导出</span></li>
-              <li><span>队列：单批 200 集 · 10 路并发</span></li>
-            </ul>
+          <div className="footer-links">
+            <button onClick={() => onEnterWorkspace('overview')}>任务总览</button>
+            <button onClick={() => onEnterWorkspace('inpaint')}>去水印修复</button>
+            <button onClick={() => onEnterWorkspace('translate')}>多语翻译</button>
+            <button onClick={() => onEnterWorkspace('annotate')}>区域模板</button>
+            <button onClick={() => onEnterWorkspace('subtitle-style')}>字幕样式</button>
           </div>
         </div>
       </footer>
