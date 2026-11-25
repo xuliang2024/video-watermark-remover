@@ -8,6 +8,7 @@
 
 *Open-Source AI Video Watermark Remover, Hardcoded Subtitle Eraser & 31-Language Video Localization Studio*
 
+[![Official Cloud SaaS](https://img.shields.io/badge/Official_Cloud_SaaS-erasevid.com-10B981?style=flat-square&logo=cloudflare&logoColor=white)](https://erasevid.com/?utm_source=github&utm_medium=readme_ja)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-18.3-61DAFB?style=flat-square&logo=react&logoColor=0A0C10)](https://react.dev/)
@@ -26,6 +27,7 @@
 </p>
 
 <p align="center">
+  <a href="https://erasevid.com/?utm_source=github&utm_medium=readme_ja"><strong>🚀 公式クラウド版（EraseVid.com・環境構築不要）</strong></a> ·
   <a href="#プロジェクト概要">概要</a> ·
   <a href="#主な機能">主な機能</a> ·
   <a href="#画面プレビュー">画面プレビュー</a> ·
@@ -36,6 +38,8 @@
   <a href="#rest-api-リファレンス">REST API</a> ·
   <a href="#よくある質問faq">FAQ</a>
 </p>
+
+> **サーバー構築やクラウドAPIキーの取得なしで今すぐ使いたいですか？** 公式マネージドクラウド版 👉 **[https://erasevid.com](https://erasevid.com/?utm_source=github&utm_medium=readme_ja)** なら、ブラウザから動画をアップロードするだけですぐに一括処理可能（チーム共同作業・従量課金・失敗時自動返金・新規登録で無料体験クレジット進呈）。
 
 <img src="../screenshots/01-hero-landing.png" alt="CleanFrame ランディングページと透かし消去ビフォーアフター比較" width="100%" />
 

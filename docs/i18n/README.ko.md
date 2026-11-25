@@ -8,6 +8,7 @@
 
 *Open-Source AI Video Watermark Remover, Hardcoded Subtitle Eraser & 31-Language Video Localization Studio*
 
+[![Official Cloud SaaS](https://img.shields.io/badge/Official_Cloud_SaaS-erasevid.com-10B981?style=flat-square&logo=cloudflare&logoColor=white)](https://erasevid.com/?utm_source=github&utm_medium=readme_ko)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-18.3-61DAFB?style=flat-square&logo=react&logoColor=0A0C10)](https://react.dev/)
@@ -26,6 +27,7 @@
 </p>
 
 <p align="center">
+  <a href="https://erasevid.com/?utm_source=github&utm_medium=readme_ko"><strong>🚀 공식 클라우드 스튜디오 (EraseVid.com · 설치 없이 즉시 사용)</strong></a> ·
   <a href="#프로젝트-소개">소개</a> ·
   <a href="#핵심-기능">핵심 기능</a> ·
   <a href="#화면-및-결과-미리보기">화면 미리보기</a> ·
@@ -36,6 +38,8 @@
   <a href="#rest-api-요약">REST API</a> ·
   <a href="#자주-묻는-질문-faq">FAQ</a>
 </p>
+
+> **직접 서버를 구축하거나 클라우드 API 키를 발급받지 않고 바로 사용하고 싶으신가요?** 공식 호스팅 클라우드 워크스페이스 👉 **[https://erasevid.com](https://erasevid.com/?utm_source=github&utm_medium=readme_ko)** 에서 설치 없이 웹 업로드만으로 즉시 일괄 작업하세요 (팀 협업 · 종량제 과금 및 실패 시 자동 전액 환불 · 신규 가입 무료 크레딧 제공).
 
 <img src="../screenshots/01-hero-landing.png" alt="CleanFrame 랜딩 페이지 및 워터마크 제거 전후 비교 스테이지" width="100%" />
 

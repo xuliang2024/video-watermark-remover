@@ -8,6 +8,7 @@
 
 *Open-Source AI Video Watermark Remover, Hardcoded Subtitle Eraser & 31-Language Video Localization Studio*
 
+[![Official Cloud SaaS](https://img.shields.io/badge/Official_Cloud_SaaS-erasevid.com-10B981?style=flat-square&logo=cloudflare&logoColor=white)](https://erasevid.com/?utm_source=github&utm_medium=readme_zh)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-18.3-61DAFB?style=flat-square&logo=react&logoColor=0A0C10)](https://react.dev/)
@@ -26,6 +27,7 @@
 </p>
 
 <p align="center">
+  <a href="https://erasevid.com/?utm_source=github&utm_medium=readme_zh"><strong>🚀 在线商业云工作台（EraseVid.com · 免部署即用）</strong></a> ·
   <a href="#项目简介">项目简介</a> ·
   <a href="#核心能力亮点">核心亮点</a> ·
   <a href="#界面与效果预览">界面预览</a> ·
@@ -36,6 +38,8 @@
   <a href="#rest-api-速查表">API 文档</a> ·
   <a href="#常见问题faq">FAQ</a>
 </p>
+
+> **不想自备服务器或申请配置云厂商 API 密钥？** 立即访问官方托管云工作台 👉 **[https://erasevid.com](https://erasevid.com/?utm_source=github&utm_medium=readme_zh)** —— 零运维开箱即用、团队多成员协作、按量透明计费（异常任务自动全额退费），注册新团队即赠体验金。
 
 <img src="./docs/screenshots/01-hero-landing.png" alt="净影 CleanFrame 产品首页与去水印前后对比舞台" width="100%" />
 

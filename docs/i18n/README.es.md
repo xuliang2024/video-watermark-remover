@@ -6,6 +6,7 @@
 
 **Estudio Open-Source con IA para Eliminar Marcas de Agua en Video, Borrar Subtítulos Incrustados y Traducir/Doblar a 31 Idiomas**
 
+[![Official Cloud SaaS](https://img.shields.io/badge/Official_Cloud_SaaS-erasevid.com-10B981?style=flat-square&logo=cloudflare&logoColor=white)](https://erasevid.com/?utm_source=github&utm_medium=readme_es)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-18.3-61DAFB?style=flat-square&logo=react&logoColor=0A0C10)](https://react.dev/)
@@ -24,6 +25,7 @@
 </p>
 
 <p align="center">
+  <a href="https://erasevid.com/?utm_source=github&utm_medium=readme_es"><strong>🚀 Estudio Oficial en la Nube (EraseVid.com · Sin Instalación)</strong></a> ·
   <a href="#descripción-general">Descripción</a> ·
   <a href="#características-principales">Características</a> ·
   <a href="#galería-de-interfaz-y-resultados">Galería</a> ·
@@ -34,6 +36,8 @@
   <a href="#referencia-de-api-rest">API REST</a> ·
   <a href="#preguntas-frecuentes-faq">FAQ</a>
 </p>
+
+> **¿Quieres procesar videos al instante sin servidores propios ni claves API?** Usa la plataforma oficial en la nube 👉 **[https://erasevid.com](https://erasevid.com/?utm_source=github&utm_medium=readme_es)** — sin configuración técnica, espacios colaborativos por equipo, pago por uso con reembolso automático ante fallos y saldo de prueba gratis al registrarte.
 
 <img src="../screenshots/01-hero-landing.png" alt="Página principal de CleanFrame y comparador antes/después" width="100%" />
 

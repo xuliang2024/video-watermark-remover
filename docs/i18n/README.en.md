@@ -6,6 +6,7 @@
 
 **Open-Source AI Video Watermark Remover, Hardcoded Subtitle Eraser & 31-Language Video Localization Studio**
 
+[![Official Cloud SaaS](https://img.shields.io/badge/Official_Cloud_SaaS-erasevid.com-10B981?style=flat-square&logo=cloudflare&logoColor=white)](https://erasevid.com/?utm_source=github&utm_medium=readme_en)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-18.3-61DAFB?style=flat-square&logo=react&logoColor=0A0C10)](https://react.dev/)
@@ -24,6 +25,7 @@
 </p>
 
 <p align="center">
+  <a href="https://erasevid.com/?utm_source=github&utm_medium=readme_en"><strong>🚀 Official Cloud Studio (EraseVid.com · Zero-Setup SaaS)</strong></a> ·
   <a href="#overview">Overview</a> ·
   <a href="#key-features">Key Features</a> ·
   <a href="#live-ui--preview-gallery">Preview Gallery</a> ·
@@ -34,6 +36,8 @@
   <a href="#rest-api-reference">REST API</a> ·
   <a href="#faq">FAQ</a>
 </p>
+
+> **Want instant results without self-hosting or managing cloud API keys?** Launch the official hosted cloud workspace at **[https://erasevid.com](https://erasevid.com/?utm_source=github&utm_medium=readme_en)** — zero infrastructure setup, multi-member team workspaces, pay-as-you-go billing with automatic failure refunds, and free trial credits upon sign-up.
 
 <img src="../screenshots/01-hero-landing.png" alt="CleanFrame Landing Page & Before/After Watermark Erasure Stage" width="100%" />
 

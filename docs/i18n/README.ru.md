@@ -6,6 +6,7 @@
 
 **Open-Source ИИ-студия для удаления водяных знаков с видео, стирания вшитых субтитров и дубляжа/перевода на 31 язык**
 
+[![Official Cloud SaaS](https://img.shields.io/badge/Official_Cloud_SaaS-erasevid.com-10B981?style=flat-square&logo=cloudflare&logoColor=white)](https://erasevid.com/?utm_source=github&utm_medium=readme_ru)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-18.3-61DAFB?style=flat-square&logo=react&logoColor=0A0C10)](https://react.dev/)
@@ -24,6 +25,7 @@
 </p>
 
 <p align="center">
+  <a href="https://erasevid.com/?utm_source=github&utm_medium=readme_ru"><strong>🚀 Облачная SaaS-студия (EraseVid.com · Без установки)</strong></a> ·
   <a href="#о-проекте">О проекте</a> ·
   <a href="#ключевые-возможности">Возможности</a> ·
   <a href="#галерея-интерфейса-и-результатов">Скриншоты</a> ·
@@ -34,6 +36,8 @@
   <a href="#справочник-rest-api">REST API</a> ·
   <a href="#частые-вопросы-faq">FAQ</a>
 </p>
+
+> **Хотите работать сразу без настройки серверов и облачных API-ключей?** Переходите в официальную облачную студию 👉 **[https://erasevid.com](https://erasevid.com/?utm_source=github&utm_medium=readme_ru)** — пакетная загрузка в браузере, командный доступ, оплата по факту с автовозвратом при сбоях и приветственный бонус при регистрации.
 
 <img src="../screenshots/01-hero-landing.png" alt="Главная страница CleanFrame и интерактивное сравнение до/после" width="100%" />
 
