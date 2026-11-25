@@ -306,19 +306,20 @@ export function WorkspacePage({ initialView, onGoHome, onViewChange }: Props) {
               </button>
               <button
                 className="env-chip"
-                title="点击前往「系统设置」管理环境变量"
+                title="点击前往「系统设置」管理线上凭证"
                 onClick={() => navigate('settings')}
               >
                 <span
                   className="live-dot"
                   style={{
-                    background: systemConfig?.effective_mode === 'live' ? '#4CE0A5' : '#E8B04B',
+                    background:
+                      systemConfig?.has_las_api_key && systemConfig?.has_tos_credentials ? '#4CE0A5' : '#E8B04B',
                   }}
                 ></span>
                 <span>
-                  {systemConfig?.effective_mode === 'live'
+                  {systemConfig?.has_las_api_key && systemConfig?.has_tos_credentials
                     ? `火山 LAS · ${systemConfig.las_region}`
-                    : `净影 · 仿真模式 (${systemConfig?.las_region || 'cn-beijing'})`}
+                    : `火山 LAS · 待配置凭证`}
                 </span>
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                   <path d="M3.2 4.8L6 7.6l2.8-2.8" stroke="#5E6873" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
@@ -450,6 +451,7 @@ export function WorkspacePage({ initialView, onGoHome, onViewChange }: Props) {
                 }}
                 onToast={showToast}
                 onReopenOnboarding={() => setOnboardingOpen(true)}
+                showMonthlyQuota
               />
             )}
           </main>
@@ -484,12 +486,12 @@ export function WorkspacePage({ initialView, onGoHome, onViewChange }: Props) {
         }}
         onSkipWithMock={async () => {
           try {
-            const next = await api.dismissOnboarding('auto');
+            const next = await api.dismissOnboarding('live');
             setSystemConfig(next);
             setOnboardingOpen(false);
-            showToast('已进入本地仿真体验模式，随时可在左侧「系统设置」配置真实环境变量');
+            showToast('已收起配置引导，随时可在左侧「系统设置」补齐线上凭证');
           } catch (err: any) {
-            showToast(err.message || '初始化失败');
+            showToast(err.message || '操作失败');
           }
         }}
       />

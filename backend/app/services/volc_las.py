@@ -210,7 +210,7 @@ class VolcengineLasClient:
                 "ok": False,
                 "mode": cfg["effective_mode"],
                 "endpoint": cfg["las_base_url"],
-                "message": "尚未配置 LAS_API_KEY，当前运行在本地仿真演示模式 (mock)",
+                "message": "尚未配置必填项 LAS_API_KEY，请填写火山引擎 LAS API Key",
             }
 
         url = f"{cfg['las_base_url']}/poll"

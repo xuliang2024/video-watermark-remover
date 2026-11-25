@@ -89,8 +89,7 @@ export function MonitorView({ batchId, onNavigate, onToast }: Props) {
           <h1 className="page-title">{batch.name}</h1>
           <p className="page-subtitle">
             算子 {batch.operator_id} {batch.operator_version} · {batch.region} · 提交于 {batch.submitted_at} · 已完成{' '}
-            {batch.counts.completed} / {batch.counts.total} ·{' '}
-            {batch.execution_mode === 'live' ? '火山 LAS 实调' : '本地全链路仿真'}
+            {batch.counts.completed} / {batch.counts.total} · 火山 LAS 线上算子
           </p>
         </div>
         <div className="head-right">

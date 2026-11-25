@@ -475,23 +475,31 @@ def test_system_env_settings_persistence_and_first_run_onboarding(client: TestCl
     assert saved["monthly_quota_minutes"] == 6000.0
     assert "LAS_API_KEY=las-****4321" in saved["env_preview"]
     assert "SK_SUPER_SECRET_VALUE_9999" not in saved["env_preview"]
+    assert "# ── 必填配置" in saved["env_preview"]
+    assert "# ── 可选配置" in saved["env_preview"]
+    assert "CLEANFRAME_EXECUTION_MODE=" not in saved["env_preview"]
 
-    # Verify .env file persisted to isolated test storage path
+    # Verify .env file persisted to isolated test storage path (including internal execution_mode)
     env_file = Path(saved["env_file_path"])
     assert env_file.exists()
     raw_env = env_file.read_text(encoding="utf-8")
     assert "LAS_API_KEY=las-secret-987654321" in raw_env
     assert "VOLC_ACCESS_KEY_ID=AKLT1234567890ABCDEF" in raw_env
     assert "CLEANFRAME_MAX_CONCURRENCY=16" in raw_env
+    assert "CLEANFRAME_EXECUTION_MODE=" in raw_env
 
-    # Leaving secret fields empty on subsequent save must preserve existing secrets
+    # Leaving secret fields empty on subsequent save must preserve existing secrets & DB/storage paths
+    orig_db = saved["database_url"]
+    orig_storage = saved["storage_dir"]
     partial = client.put(
         "/api/system/config",
-        json={"las_api_key": "", "volc_access_key_id": "", "max_concurrency": 12},
+        json={"execution_mode": "live", "las_api_key": "", "volc_access_key_id": "", "max_concurrency": 12},
     ).json()
     assert partial["has_las_api_key"] is True
     assert partial["has_tos_credentials"] is True
     assert partial["max_concurrency"] == 12
+    assert partial["database_url"] == orig_db
+    assert partial["storage_dir"] == orig_storage
 
     # Explicit clear_keys removes targeted secret
     cleared = client.put(
@@ -501,12 +509,13 @@ def test_system_env_settings_persistence_and_first_run_onboarding(client: TestCl
     assert cleared["has_las_api_key"] is False
     assert cleared["effective_mode"] == "mock"
 
-    # Reopen onboarding & dismiss with mock mode
+    # Reopen onboarding & dismiss with live mode (online-only settings flow)
     reopened = client.post("/api/system/config/reset?reopen_onboarding=true").json()
     assert reopened["is_first_run"] is True
-    dismissed = client.post("/api/system/onboarding/dismiss", json={"execution_mode": "mock"}).json()
+    dismissed = client.post("/api/system/onboarding/dismiss", json={"execution_mode": "live"}).json()
     assert dismissed["is_first_run"] is False
     assert dismissed["setup_completed"] is True
+    assert dismissed["execution_mode"] == "live"
 
 
 def test_upload_progress_tracking_and_tos_callback(client: TestClient):

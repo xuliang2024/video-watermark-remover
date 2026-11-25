@@ -103,7 +103,7 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
-  dismissOnboarding: (executionMode: 'auto' | 'mock' = 'auto') =>
+  dismissOnboarding: (executionMode: 'auto' | 'live' | 'mock' = 'live') =>
     request<SystemConfig>('/api/system/onboarding/dismiss', {
       method: 'POST',
       body: JSON.stringify({ execution_mode: executionMode }),

@@ -3540,6 +3540,149 @@ button {
   gap: 15px;
 }
 
+.settings-title-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.field-badge-req {
+  height: 19px;
+  padding: 0 7px;
+  border-radius: 4px;
+  background: rgba(240, 96, 95, 0.14);
+  border: 1px solid rgba(240, 96, 95, 0.32);
+  font-size: 10px;
+  font-weight: 600;
+  color: #F48786;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.field-badge-opt {
+  height: 19px;
+  padding: 0 7px;
+  border-radius: 4px;
+  background: rgba(142, 154, 168, 0.1);
+  border: 1px solid #2A3441;
+  font-size: 10px;
+  font-weight: 500;
+  color: #9AA6B4;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.env-label-with-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.field-req-mark {
+  color: #F48786;
+  font-weight: 600;
+}
+
+.settings-accordion-head {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  transition: background 0.15s var(--ease);
+}
+
+.settings-accordion-head:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.settings-accordion-head:not(.open) {
+  border-bottom-color: transparent;
+}
+
+.settings-accordion-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.settings-accordion-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  transition: transform 0.18s var(--ease);
+}
+
+.settings-accordion-chevron.open {
+  transform: rotate(180deg);
+}
+
+.settings-accordion-chevron.sm svg {
+  width: 11px;
+  height: 11px;
+}
+
+.optional-summary-bar {
+  padding: 0 18px 15px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.opt-summary-chip {
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 5px;
+  background: #12171E;
+  border: 1px solid #222B36;
+  font-size: 10px;
+  color: #96A3B1;
+  display: inline-flex;
+  align-items: center;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.opt-summary-chip.ok {
+  color: var(--accent-text);
+  border-color: rgba(76, 224, 165, 0.25);
+  background: rgba(76, 224, 165, 0.07);
+}
+
+.opt-summary-chip.warn {
+  color: var(--amber);
+  border-color: rgba(232, 176, 75, 0.28);
+  background: rgba(232, 176, 75, 0.08);
+}
+
+.settings-subhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.settings-subhead-hint {
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--text-dim);
+}
+
 .settings-grid-2 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3632,6 +3775,14 @@ button {
 .env-input:focus {
   border-color: var(--accent-border);
   background: #141A22;
+}
+
+.env-input.is-missing {
+  border-color: rgba(232, 176, 75, 0.36);
+}
+
+.env-input.is-missing:focus {
+  border-color: var(--accent-border);
 }
 
 .env-input::placeholder {
@@ -3727,6 +3878,47 @@ button {
 
 .readiness-label {
   color: var(--text-muted);
+}
+
+.readiness-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 2px 0;
+}
+
+.preset-chip.chip-ready {
+  color: var(--accent-text);
+  background: rgba(76, 224, 165, 0.1);
+  border-color: rgba(76, 224, 165, 0.28);
+}
+
+.preset-chip.chip-pending {
+  color: var(--amber);
+  background: rgba(232, 176, 75, 0.12);
+  border-color: rgba(232, 176, 75, 0.3);
+}
+
+.env-preview-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.15s var(--ease);
+}
+
+.env-preview-toggle:hover {
+  color: var(--text-primary);
+}
+
+.settings-aside-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 .probe-result-lines {

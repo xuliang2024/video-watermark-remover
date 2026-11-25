@@ -340,38 +340,39 @@ def render_env_file_content(cfg: dict[str, Any] | None = None, *, mask_secrets: 
         return f"{raw[:4]}****{raw[-4:]}"
 
     lines = [
-        "# 净影 CleanFrame 系统环境变量配置（由系统设置页面自动维护）",
+        "# 净影 CleanFrame 线上环境变量配置（由系统设置页面自动维护）",
         "",
-        "# 1. 运行模式与基础服务",
-        f"CLEANFRAME_EXECUTION_MODE={_quote_env(c['execution_mode'])}",
-        f"CLEANFRAME_PUBLIC_BASE_URL={_quote_env(c['public_base_url'])}",
-        f"CLEANFRAME_MONTHLY_QUOTA_MIN={_quote_env(c['monthly_quota_minutes'])}",
-        "",
-        "# 2. 火山引擎 LAS 算子配置",
+        "# ── 必填配置（火山引擎 LAS 算子 + TOS 对象存储）──",
         f"LAS_API_KEY={_quote_env(_sec(c['las_api_key']))}",
         f"LAS_REGION={_quote_env(c['las_region'])}",
-        f"LAS_BASE_URL={_quote_env(c['las_base_url_raw'])}",
-        f"LAS_CALLBACK_URL={_quote_env(c['las_callback_url'])}",
-        "",
-        "# 3. 火山引擎 TOS 对象存储配置",
         f"TOS_BUCKET={_quote_env(c['tos_bucket'])}",
+        f"VOLC_ACCESS_KEY_ID={_quote_env(_sec(c['volc_access_key_id']))}",
+        f"VOLC_ACCESS_KEY_SECRET={_quote_env(_sec(c['volc_access_key_secret']))}",
+        "",
+        "# ── 可选配置（均有默认值，按需调整）──",
+        f"CLEANFRAME_PUBLIC_BASE_URL={_quote_env(c['public_base_url'])}",
+        f"LAS_CALLBACK_URL={_quote_env(c['las_callback_url'])}",
+        f"CLEANFRAME_SCHEDULER_ENABLED={_quote_env(c['scheduler_enabled'])}",
+        f"CLEANFRAME_MAX_CONCURRENCY={_quote_env(c['max_concurrency'])}",
+        f"CLEANFRAME_POLL_INTERVAL={_quote_env(c['poll_interval_seconds'])}",
+        f"LAS_BASE_URL={_quote_env(c['las_base_url_raw'])}",
         f"TOS_REGION={_quote_env(c['tos_region'])}",
         f"TOS_ENDPOINT={_quote_env(c['tos_endpoint'])}",
         f"TOS_INPUT_PREFIX={_quote_env(c['tos_input_prefix'])}",
         f"TOS_OUTPUT_PREFIX={_quote_env(c['tos_output_prefix'])}",
-        f"VOLC_ACCESS_KEY_ID={_quote_env(_sec(c['volc_access_key_id']))}",
-        f"VOLC_ACCESS_KEY_SECRET={_quote_env(_sec(c['volc_access_key_secret']))}",
-        "",
-        "# 4. 并发调度与轮询",
-        f"CLEANFRAME_SCHEDULER_ENABLED={_quote_env(c['scheduler_enabled'])}",
-        f"CLEANFRAME_MAX_CONCURRENCY={_quote_env(c['max_concurrency'])}",
-        f"CLEANFRAME_POLL_INTERVAL={_quote_env(c['poll_interval_seconds'])}",
-        "",
-        "# 5. 数据库与本地存储路径（修改后需重启服务生效）",
-        f"CLEANFRAME_DATABASE_URL={_quote_env(c['database_url'])}",
-        f"CLEANFRAME_STORAGE_DIR={_quote_env(c['storage_dir'])}",
-        "",
+        f"CLEANFRAME_MONTHLY_QUOTA_MIN={_quote_env(c['monthly_quota_minutes'])}",
     ]
+    if not mask_secrets:
+        lines.extend(
+            [
+                "",
+                "# ── 系统运维持久化参数（重启服务生效）──",
+                f"CLEANFRAME_EXECUTION_MODE={_quote_env(c['execution_mode'])}",
+                f"CLEANFRAME_DATABASE_URL={_quote_env(c['database_url'])}",
+                f"CLEANFRAME_STORAGE_DIR={_quote_env(c['storage_dir'])}",
+            ]
+        )
+    lines.append("")
     return "\n".join(lines)
 
 

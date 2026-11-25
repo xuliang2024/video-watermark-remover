@@ -96,7 +96,7 @@ export default function App() {
           enterWorkspace('settings');
         }}
         onSkipWithMock={async () => {
-          await api.dismissOnboarding('auto');
+          await api.dismissOnboarding('live');
           setLandingFirstRun(false);
         }}
       />

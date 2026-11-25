@@ -135,7 +135,7 @@ class SystemConfigUpdate(BaseModel):
 
 
 class SystemOnboardingDismiss(BaseModel):
-    execution_mode: Literal["auto", "mock"] | None = None
+    execution_mode: Literal["auto", "live", "mock"] | None = None
 
 
 

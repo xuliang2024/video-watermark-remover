@@ -115,7 +115,7 @@ export function InpaintCreateView({
         files.map((f) => f.id),
         payloadCfg
       );
-      onToast(`已提交 ${res.task_count} 个修复任务至批次 ${res.code}（${res.execution_mode === 'live' ? '火山 LAS 实调' : '本地仿真'}）`);
+      onToast(`已提交 ${res.task_count} 个修复任务至批次 ${res.code}`);
       onNavigate('monitor', { batchId: res.batch_id });
     } catch (err: any) {
       onToast(err.message || '提交修复任务失败');
