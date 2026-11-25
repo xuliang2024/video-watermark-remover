@@ -2,9 +2,9 @@
 
 <img src="../screenshots/logo.svg" alt="CleanFrame Logo" width="84" height="84" />
 
-# CleanFrame (净影)
+# CleanFrame (净影) — AI Video Watermark & Subtitle Remover
 
-**Open-Source AI Video Watermark Remover, Hardcoded Subtitle Eraser & 31-Language Video Localization Studio**
+**Open-Source AI Video Watermark Remover, Hardcoded Subtitle Remover (Video Inpainting) & 31-Language Video Translation / Voice-Cloning Dubbing Studio**
 
 [![Official Cloud SaaS](https://img.shields.io/badge/Official_Cloud_SaaS-erasevid.com-10B981?style=flat-square&logo=cloudflare&logoColor=white)](https://erasevid.com/?utm_source=github&utm_medium=readme_en)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
@@ -47,7 +47,7 @@
 
 ## Overview
 
-**CleanFrame (净影)** is a production-grade, open-source batch video post-production and localization studio built for **short-drama distributors, cross-border e-commerce sellers, MCN agencies, online educators, and independent creators**. Powered by **FastAPI + React 18 + TypeScript** and deeply integrated with Volcengine LAS AI video operators (`las_video_inpaint_pro v1` for video watermark/subtitle inpainting and `las_video_translate v1` for 31-language voice-cloned dubbing & subtitle burn-in), CleanFrame unifies **batch video upload, normalized bounding-box annotation, seamless watermark/hard-subtitle removal, and multi-language video localization** into a single dark-mode studio workspace.
+**CleanFrame (净影)** is a production-grade, open-source batch video post-production and localization studio built for **short-drama distributors, cross-border e-commerce sellers, MCN agencies, video editors, online educators, and independent creators**. Powered by **FastAPI + React 18 + TypeScript** and spatiotemporal AI video operators (`las_video_inpaint_pro v1` for video watermark/subtitle inpainting and `las_video_translate v1` for 31-language voice-cloned dubbing & subtitle burn-in), CleanFrame unifies **batch video upload, normalized bounding-box annotation, seamless watermark & hardcoded subtitle removal (TikTok / YouTube / Reels / Douyin corner logos, Sora / Runway / Kling / Veo AI video watermarks, TV station bugs, burned-in hardsubs), and multi-language video translation** into a single dark-mode studio workspace.
 
 > **Zero-Key Instant Preview (`Local Mock Mode`)**: No cloud API keys are required to try CleanFrame. Clone the repository and run `./start.sh` to launch the full-featured **Local Mock Simulator** out of the box—complete with interactive bounding-box annotation, before/after wipe slider, multi-language subtitle alignment, batch queue controls, and live cost estimation. Whenever you are ready for production, enter your Volcengine LAS & TOS credentials in `/workspace#settings` to hot-switch into `Live` mode without restarting or editing code.
 
@@ -354,12 +354,23 @@ Either pick the **"Logo Only · Protect Subtitles"** preset (`subtitle_protect=t
 **Q3: Why does CleanFrame recommend capping 60fps videos at 30fps?**
 `las_video_inpaint_pro` bills `≤30fps` at a `1.0x` multiplier and `60fps` at `2.0x`. Capping output at `30fps` preserves smooth playback for short dramas and courses while immediately saving **50%** on compute costs.
 
+**Q4: Which types of video watermarks and burned-in subtitles can CleanFrame remove?**
+CleanFrame removes **social & short-video platform watermarks** (TikTok, YouTube Shorts, Instagram Reels, Douyin, Kuaishou), **AI-generated video stamps** (OpenAI Sora, Runway, Kling, Veo), **broadcast TV station logos & scrolling tickers**, and **hardcoded / burned-in subtitles (hardsubs)** via spatiotemporal AI video inpainting—without cropping frames or degrading original audio.
+
+---
+
+## Common Use Cases
+
+- **Batch AI Video Watermark & Logo Remover**: Strip static corner bugs, translucent floating logos, and AI generation stamps across dozens or hundreds of MP4/MOV/MKV files.
+- **Hardcoded Subtitle Remover (Hardsub Eraser)**: Cleanly erase burned-in dialogue captions and scrolling banners from finished videos when project source files are unavailable.
+- **Short-Drama & E-Commerce Video Translation & Dubbing**: Chain watermark/hardsub removal directly into 1:1 speaker voice-cloned dubbing, burned-in localized subtitles, and `.srt` / `.ass` caption export across 31 languages.
+
 ---
 
 <div align="center">
 
 If **CleanFrame** helps streamline your video cleaning or global localization workflow, please consider giving the repository a **Star**!
 
-**[Back to Top](#cleanframe-净影)**
+**[Back to Top](#cleanframe-净影--ai-video-watermark--subtitle-remover)**
 
 </div>

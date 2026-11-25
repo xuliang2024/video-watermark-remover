@@ -2,6 +2,32 @@
   "name": "cleanframe-frontend",
   "private": true,
   "version": "1.0.0",
+  "description": "Open-source AI Video Watermark Remover, Hardcoded Subtitle Remover & 31-Language Video Translation / Dubbing Studio (FastAPI + React + TypeScript)",
+  "homepage": "https://erasevid.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xuliang2024/video-watermark-remover.git"
+  },
+  "keywords": [
+    "video-watermark-remover",
+    "watermark-remover",
+    "watermark-removal",
+    "subtitle-remover",
+    "subtitle-removal",
+    "hardcoded-subtitle-remover",
+    "hardsub-remover",
+    "video-inpainting",
+    "video-translation",
+    "video-dubbing",
+    "voice-cloning",
+    "video-localization",
+    "short-drama",
+    "sora-watermark-remover",
+    "tiktok-watermark-remover",
+    "ai-video",
+    "fastapi",
+    "react"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 5173",

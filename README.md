@@ -2,11 +2,11 @@
 
 <img src="./docs/screenshots/logo.svg" alt="CleanFrame Logo" width="84" height="84" />
 
-# 净影 CleanFrame
+# 净影 CleanFrame — AI 视频去水印 & 视频去字幕工作台
 
-**开源 AI 视频去水印、硬字幕无痕擦除与 31 语种视频翻译烧录一体化工作台**
+**开源 AI 视频去水印、视频硬字幕无痕擦除（去字幕）与 31 语种视频翻译配音烧录一体化工作台**
 
-*Open-Source AI Video Watermark Remover, Hardcoded Subtitle Eraser & 31-Language Video Localization Studio*
+*Open-Source AI Video Watermark Remover, Hardcoded Subtitle Remover (Video Inpainting) & 31-Language Video Translation / Voice-Cloning Dubbing Studio*
 
 [![Official Cloud SaaS](https://img.shields.io/badge/Official_Cloud_SaaS-erasevid.com-10B981?style=flat-square&logo=cloudflare&logoColor=white)](https://erasevid.com/?utm_source=github&utm_medium=readme_zh)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
@@ -49,7 +49,7 @@
 
 ## 项目简介
 
-**净影 CleanFrame** 是一套面向**短剧出海团队、跨境电商卖家、MCN 机构、在线教育团队及独立创作者**构建的开源批量视频后制工作台。系统底层深度对接火山引擎大模型数据算子（`las_video_inpaint_pro v1` 视频去水印/字幕擦除算子与 `las_video_translate v1` 多语种视频翻译配音算子），前端提供影视后期级暗色工作台，实现从**本地视频批量上传、画布级固定框标注、无痕去水印与去硬字幕，到 31 语种原声复刻配音与字幕重烧录**的一站式自动化流水线。
+**净影 CleanFrame** 是一套面向**短剧出海团队、跨境电商卖家、MCN 机构、影视二创解说、在线教育团队及独立创作者**构建的开源批量视频后制工作台。系统底层深度对接大模型时空视频修复与翻译算子（`las_video_inpaint_pro v1` 视频去水印/字幕擦除算子与 `las_video_translate v1` 多语种视频翻译配音算子），前端提供影视后期级暗色工作台，实现从**本地视频批量上传、画布级固定框标注、无痕去水印与视频去字幕（去除内嵌硬字幕 / 抖音·快手·TikTok·YouTube 角标 / Sora·Runway·可灵 AI 生成视频水印 / 电视台标），到 31 语种原声复刻配音与字幕重烧录**的一站式自动化流水线。
 
 > **免密钥即刻体验（Zero-Key Local Mock）**：无需预先开通任何云端凭证，克隆仓库后执行 `./start.sh` 即可启动**本地全链路仿真模式**，完整体验多批次调度、1000×1000 归一化框选标注、修复前后滑块对比、多语字幕对照、在线成本试算等全部界面能力；在工作台「系统设置」填入火山引擎 LAS / TOS 凭证后，无需改代码即可热切换至 `Live` 生产算子模式。
 
@@ -459,6 +459,17 @@ npm --prefix frontend run build
 **Q4：生产部署时建议如何配置异步回调？**
 若部署在公网服务器并配有 HTTPS 域名，建议在系统设置中将 `LAS_CALLBACK_URL` 设为 `https://your-domain.com/api/webhooks/las-callback`。系统会同时保持后台主动轮询与异步回调幂等收口，即使网络短暂抖动也不会丢单。
 
+**Q5：支持去除哪些类型的视频水印与内嵌字幕？**
+无论是**短视频平台角标**（抖音、快手、TikTok、Instagram Reels、YouTube Shorts）、**AI 视频生成水印**（OpenAI Sora、Runway、Kling 可灵、Veo、Jimeng 即梦）、**影视电视台标与跑马灯**，还是**烧录进画面的硬编码字幕（Hardsub / 内嵌字幕）**，均可通过「VLM 精准识别」或「1000×1000 固定框时间轴模板」进行像素级时空背景重绘，不裁剪画面、不伤原片音轨。
+
+---
+
+## 典型应用场景与检索索引
+
+- **批量视频去水印 / 去台标（Batch Video Watermark & Logo Removal）**：一键擦除抖音、TikTok、YouTube、电商主图视频、Sora / AI 生成视频中的静态角标、半透明浮动水印与片头铭牌。
+- **AI 视频去硬字幕 / 内嵌字幕擦除（Hardcoded Subtitle Remover / Hardsub Eraser）**：针对无工程文件的成片视频，精准抹除底部台词硬字幕与顶部滚动字幕，为二次剪辑与多语种重制提供干净母带。
+- **短剧出海与跨境电商视频多语本地化（Short-Drama & E-Commerce Video Localization）**：「先去原片水印和中文硬字幕 → 再 1:1 原声克隆配音 + 31 语种字幕烧录与 `.srt/.ass` 导出」单管线批量出片。
+
 ---
 
 ## 参与贡献
@@ -474,6 +485,6 @@ npm --prefix frontend run build
 
 如果 **净影 CleanFrame** 对你的视频去水印或内容出海工作流有所帮助，欢迎点亮右上角 **Star** 支持项目持续迭代！
 
-**[返回顶部](#净影-cleanframe)**
+**[返回顶部](#净影-cleanframe--ai-视频去水印--视频去字幕工作台)**
 
 </div>
