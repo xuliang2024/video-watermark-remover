@@ -102,22 +102,22 @@ export function OverviewView({ searchQuery, onNavigate, onToast }: Props) {
       <div className="kpi-strip" aria-label="核心运行指标">
         <div className="kpi-cell">
           <span className="kpi-label">今日处理</span>
-          <span className="kpi-value mono">{processedDisplay}</span>
+          <span className="kpi-value">{processedDisplay}</span>
           <span className="kpi-note">{data?.kpis.processed_delta || '实时统计中'}</span>
         </div>
         <div className="kpi-cell kpi-cell-rate">
           <span className="kpi-label">任务成功率</span>
-          <span className="kpi-value mono">{successRateDisplay}</span>
+          <span className="kpi-value">{successRateDisplay}</span>
           <span className="kpi-note">{data?.kpis.recent_count || '空间累计任务'}</span>
         </div>
         <div className="kpi-cell">
           <span className="kpi-label">队列中</span>
-          <span className={`kpi-value mono${queuedCount > 0 ? ' is-accent' : ''}`}>{queuedCount}</span>
+          <span className={`kpi-value${queuedCount > 0 ? ' is-accent' : ''}`}>{queuedCount}</span>
           <span className="kpi-note">{data?.kpis.queue_eta || '队列空闲'}</span>
         </div>
         <div className="kpi-cell">
           <span className="kpi-label">本月费用</span>
-          <span className="kpi-value mono">{data?.kpis.monthly_cost || '¥0.00'}</span>
+          <span className="kpi-value">{data?.kpis.monthly_cost || '¥0.00'}</span>
           <span className="kpi-note">{data?.kpis.monthly_usage || '计费用量 0.0 分钟'}</span>
         </div>
       </div>
@@ -285,7 +285,9 @@ export function OverviewView({ searchQuery, onNavigate, onToast }: Props) {
                         <div className="progress-track">
                           <div className="progress-fill blue" style={{ width: `${Math.max(4, t.progress)}%` }} />
                         </div>
-                        <span className="mono">{t.progress}%</span>
+                        <span className="mono">
+                          {t.progress}%{durationText !== '—' ? ` · ${durationText}` : ''}
+                        </span>
                       </div>
                     ) : (
                       <span className="task-mobile-meta mono">{mobileMetaParts.join(' · ') || t.meta}</span>
