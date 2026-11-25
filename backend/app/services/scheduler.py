@@ -122,7 +122,8 @@ def finalize_task_completed(db: Session, task: OperatorTask, data: dict) -> None
 
     task.result_json = json.dumps(data, ensure_ascii=False)
 
-    if not already_completed:
+    existing_bill = db.query(BillingRecord).filter(BillingRecord.task_id == task.id).first()
+    if not already_completed and not existing_bill:
         batch = db.query(BatchJob).filter(BatchJob.id == task.batch_id).first()
         code = batch.code if batch else task.batch_id
         op_label = (

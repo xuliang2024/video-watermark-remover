@@ -91,23 +91,23 @@ export function OverviewView({ searchQuery, onNavigate, onToast, region }: Props
       <div className="kpi-grid">
         <div className="kpi-card">
           <span className="kpi-label">今日已处理</span>
-          <span className="kpi-value">{data?.kpis.processed_today || '4h 12m'}</span>
-          <span className="kpi-note mint">{data?.kpis.processed_delta || '环比昨日 +18.4%'}</span>
+          <span className="kpi-value">{data?.kpis.processed_today || '0m'}</span>
+          <span className="kpi-note mint">{data?.kpis.processed_delta || '正在同步统计...'}</span>
         </div>
         <div className="kpi-card">
           <span className="kpi-label">任务成功率</span>
-          <span className="kpi-value">{data?.kpis.success_rate || '98.2%'}</span>
-          <span className="kpi-note">{data?.kpis.recent_count || '近 24 小时 412 个任务'}</span>
+          <span className="kpi-value">{data?.kpis.success_rate || '100.0%'}</span>
+          <span className="kpi-note">{data?.kpis.recent_count || '正在同步任务队列...'}</span>
         </div>
         <div className="kpi-card">
           <span className="kpi-label">队列中</span>
-          <span className="kpi-value">{data?.kpis.queued_count ?? '—'}</span>
-          <span className="kpi-note amber">{data?.kpis.queue_eta || '预计 12 分钟清空'}</span>
+          <span className="kpi-value">{data?.kpis.queued_count ?? 0}</span>
+          <span className="kpi-note amber">{data?.kpis.queue_eta || '队列空闲'}</span>
         </div>
         <div className="kpi-card">
           <span className="kpi-label">本月费用</span>
-          <span className="kpi-value">{data?.kpis.monthly_cost || '¥386.40'}</span>
-          <span className="kpi-note">{data?.kpis.monthly_usage || '计费用量 412 分钟'}</span>
+          <span className="kpi-value">{data?.kpis.monthly_cost || '¥0.00'}</span>
+          <span className="kpi-note">{data?.kpis.monthly_usage || '计费用量 0.0 分钟'}</span>
         </div>
       </div>
 
@@ -132,7 +132,7 @@ export function OverviewView({ searchQuery, onNavigate, onToast, region }: Props
             <button
               className="icon-btn"
               title="进入当前批次监控"
-              onClick={() => onNavigate('monitor', { batchId: data?.active_batch_id || 'batch-b0412' })}
+              onClick={() => onNavigate('monitor', { batchId: data?.active_batch_id || 'latest' })}
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <circle cx="3.4" cy="8" r="1.15" fill="#6E7885" />

@@ -28,10 +28,10 @@ export function CompareView({ taskId, onNavigate, onToast }: Props) {
   useEffect(() => {
     setPlaying(false);
     api
-      .getTaskDetail(taskId || 'task-20261113-01a8')
+      .getTaskDetail(taskId || 'latest')
       .then(setTask)
       .catch(() => {
-        api.getTaskDetail('task-20261113-01a8').then(setTask).catch(() => {});
+        setTask(null);
       });
   }, [taskId]);
 
@@ -84,7 +84,7 @@ export function CompareView({ taskId, onNavigate, onToast }: Props) {
           <button className="breadcrumb-back" onClick={() => onNavigate('overview')}>
             ← 返回任务总览
           </button>
-          <h1 className="page-title">修复完成 · {task?.file || 'S01E01_雨夜来客.mp4'}</h1>
+          <h1 className="page-title">修复完成 · {task?.file || '未选择任务'}</h1>
           <p className="page-subtitle">
             {task?.scheme || '专业版 · 精准识别'} · 目标：{task?.sub_scheme || '水印 · 字幕'} · 处理耗时{' '}
             {res.elapsed_label || '已完成'} · 原音频已保留

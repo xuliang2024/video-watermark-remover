@@ -10,15 +10,17 @@ interface Props {
 
 export function MonitorView({ batchId, onNavigate, onToast }: Props) {
   const [batch, setBatch] = useState<BatchDetail | null>(null);
+  const [notFound, setNotFound] = useState(false);
   const [busy, setBusy] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
 
   async function loadBatch() {
     try {
-      const res = await api.getBatchDetail(batchId || 'batch-b0412');
+      const res = await api.getBatchDetail(batchId || 'latest');
       setBatch(res);
-    } catch (err: any) {
-      onToast(err.message || '加载批次监控失败');
+      setNotFound(false);
+    } catch {
+      setNotFound(true);
     }
   }
 
@@ -70,7 +72,9 @@ export function MonitorView({ batchId, onNavigate, onToast }: Props) {
   if (!batch) {
     return (
       <section className="view active">
-        <div className="empty-state">正在同步批次运行状态...</div>
+        <div className="empty-state">
+          {notFound ? '当前空间暂无运行批次，请先新建修复或翻译任务' : '正在同步批次运行状态...'}
+        </div>
       </section>
     );
   }

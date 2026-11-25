@@ -62,8 +62,13 @@ STATUS_MAP_UI = {
 
 
 def _next_batch_code(db: Session) -> str:
-    count = db.query(BatchJob).count()
-    return f"B-{412 + count}"
+    codes = [r[0] for r in db.query(BatchJob.code).all() if r[0]]
+    max_num = 0
+    for c in codes:
+        tail = str(c).split("-")[-1]
+        if tail.isdigit():
+            max_num = max(max_num, int(tail))
+    return f"B-{max_num + 1:03d}" if max_num < 100 else f"B-{max_num + 1}"
 
 
 def _serialize_task_row(t: OperatorTask) -> dict:
@@ -602,7 +607,14 @@ def _resolve_playable_url(raw_url: str | None, tos_uri: str | None = None) -> st
 def get_task_detail(task_id: str, db: Session = Depends(get_db)):
     task = db.query(OperatorTask).filter(OperatorTask.id == task_id).first()
     if not task:
-        raise HTTPException(status_code=404, detail="任务不存在")
+        task = (
+            db.query(OperatorTask)
+            .filter(OperatorTask.status == "COMPLETED")
+            .order_by(OperatorTask.submitted_at.desc())
+            .first()
+        )
+        if not task:
+            raise HTTPException(status_code=404, detail="任务不存在")
     result_data = json.loads(task.result_json or "{}")
     request_payload = json.loads(task.request_payload_json or "{}")
 

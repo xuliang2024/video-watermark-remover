@@ -70,10 +70,10 @@ export function TranslateResultView({ taskId, onNavigate, onToast }: Props) {
   useEffect(() => {
     setActiveIdx(0);
     api
-      .getTaskDetail(taskId || 'task-20261113-06e7')
+      .getTaskDetail(taskId || 'latest')
       .then(setTask)
       .catch(() => {
-        api.getTaskDetail('task-20261113-06e7').then(setTask).catch(() => {});
+        setTask(null);
       });
   }, [taskId]);
 
@@ -110,7 +110,7 @@ export function TranslateResultView({ taskId, onNavigate, onToast }: Props) {
           <button className="breadcrumb-back" onClick={() => onNavigate('overview')}>
             ← 返回任务总览
           </button>
-          <h1 className="page-title">翻译完成 · {task?.file || 'S01E01_雨夜来客.mp4'}</h1>
+          <h1 className="page-title">翻译完成 · {task?.file || '未选择任务'}</h1>
           <p className="page-subtitle">
             {res.source_lang || '中文（简体）'} → {cards.map((c) => c.label.split(' · ')[1] || c.code).join(' / ')} ·{' '}
             {task?.scheme || '高质量配音'}
