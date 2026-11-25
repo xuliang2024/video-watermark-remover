@@ -60,15 +60,19 @@ export function probeLocalVideoMeta(file: File): Promise<ClientVideoMetaHint | u
     }
     let settled = false;
     let objectUrl = '';
+    let baseMeta: ClientVideoMetaHint | undefined;
     const video = document.createElement('video');
     video.preload = 'metadata';
     video.muted = true;
+    video.playsInline = true;
 
     const finish = (hint?: ClientVideoMetaHint) => {
       if (settled) return;
       settled = true;
       window.clearTimeout(timer);
       video.onloadedmetadata = null;
+      video.onloadeddata = null;
+      video.onseeked = null;
       video.onerror = null;
       video.removeAttribute('src');
       try {
@@ -82,28 +86,72 @@ export function probeLocalVideoMeta(file: File): Promise<ClientVideoMetaHint | u
       resolve(hint);
     };
 
-    const timer = window.setTimeout(() => finish(undefined), 2500);
+    const timer = window.setTimeout(() => finish(baseMeta), 3500);
+
+    const captureFrame = () => {
+      try {
+        const w = Math.round(video.videoWidth || 0);
+        const h = Math.round(video.videoHeight || 0);
+        if (w <= 0 || h <= 0) {
+          finish(baseMeta);
+          return;
+        }
+        const targetW = Math.min(640, w);
+        const targetH = Math.max(2, Math.round((h * targetW) / w));
+        const canvas = document.createElement('canvas');
+        canvas.width = targetW;
+        canvas.height = targetH;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          finish(baseMeta);
+          return;
+        }
+        ctx.drawImage(video, 0, 0, targetW, targetH);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        if (dataUrl.startsWith('data:image/jpeg;base64,') && dataUrl.length < 300_000) {
+          finish({ ...(baseMeta || {}), thumbnail_data_url: dataUrl });
+        } else {
+          finish(baseMeta);
+        }
+      } catch {
+        finish(baseMeta);
+      }
+    };
 
     video.onloadedmetadata = () => {
       const w = Math.round(video.videoWidth || 0);
       const h = Math.round(video.videoHeight || 0);
       const dur = Number.isFinite(video.duration) && video.duration > 0 ? Math.round(video.duration * 100) / 100 : 0;
       if (w > 0 && h > 0 && dur > 0) {
-        finish({ width: w, height: h, duration_sec: dur });
+        baseMeta = { width: w, height: h, duration_sec: dur };
       } else if (dur > 0) {
-        finish({ duration_sec: dur });
+        baseMeta = { duration_sec: dur };
+      }
+
+      if (w > 0 && h > 0) {
+        const seekTo = dur > 1 ? Math.min(0.5, dur * 0.1) : 0;
+        if (seekTo > 0) {
+          video.onseeked = captureFrame;
+          try {
+            video.currentTime = seekTo;
+            return;
+          } catch {
+            // fallback to immediate capture
+          }
+        }
+        video.onloadeddata = captureFrame;
       } else {
-        finish(undefined);
+        finish(baseMeta);
       }
     };
 
-    video.onerror = () => finish(undefined);
+    video.onerror = () => finish(baseMeta);
 
     try {
       objectUrl = URL.createObjectURL(file);
       video.src = objectUrl;
     } catch {
-      finish(undefined);
+      finish(baseMeta);
     }
   });
 }

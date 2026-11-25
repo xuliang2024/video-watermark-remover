@@ -68,6 +68,7 @@ export interface ClientVideoMetaHint {
   width?: number;
   height?: number;
   duration_sec?: number;
+  thumbnail_data_url?: string;
 }
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {

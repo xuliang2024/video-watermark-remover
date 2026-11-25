@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import json
 import re
 import shutil
@@ -65,7 +66,15 @@ def probe_video_metadata(
             str(source),
         ]
         try:
-            res = subprocess.run(cmd, capture_output=True, text=True, timeout=30 if is_remote else 15)
+            # Cap remote ffprobe to 8s when browser already provided width/height/duration
+            has_client_meta = bool(
+                client_hint
+                and client_hint.get("width")
+                and client_hint.get("height")
+                and client_hint.get("duration_sec")
+            )
+            probe_timeout = (8 if has_client_meta else 20) if is_remote else 15
+            res = subprocess.run(cmd, capture_output=True, text=True, timeout=probe_timeout)
             if res.returncode == 0 and res.stdout.strip():
                 payload = json.loads(res.stdout)
                 streams = payload.get("streams", [])
@@ -108,6 +117,25 @@ def probe_video_metadata(
         "frames": max(1, int(round(est_sec * 30.0))),
         "probed": bool(hint_w and hint_h and hint_dur > 0),
     }
+
+
+def save_thumbnail_data_url(data_url: str | None, asset_id: str) -> str | None:
+    """Persist browser-captured JPEG poster frame to local thumbnails dir (zero remote download)."""
+    if not data_url or not data_url.startswith("data:image/jpeg;base64,"):
+        return None
+    b64 = data_url[len("data:image/jpeg;base64,") :].strip()
+    if not b64 or len(b64) > 450_000:  # ~330 KB raw JPEG cap
+        return None
+    try:
+        raw = base64.b64decode(b64, validate=True)
+        if len(raw) < 128 or len(raw) > 350_000 or not raw.startswith(b"\xff\xd8"):
+            return None
+        settings = get_settings()
+        out_path = settings.thumbnails_path / f"{asset_id}.jpg"
+        out_path.write_bytes(raw)
+        return f"/media/thumbnails/{asset_id}.jpg"
+    except Exception:
+        return None
 
 
 def extract_thumbnail(source: Path | str, asset_id: str) -> str:

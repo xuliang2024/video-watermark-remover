@@ -20,6 +20,7 @@ from ..services.media import (
     extract_thumbnail,
     probe_video_metadata,
     sanitize_filename,
+    save_thumbnail_data_url,
 )
 from ..services.tos_client import tos_service
 from ..services.upload_progress import direct_upload_sessions, upload_progress_tracker
@@ -53,6 +54,7 @@ class ClientVideoMetaHint(BaseModel):
     width: int | None = None
     height: int | None = None
     duration_sec: float | None = None
+    thumbnail_data_url: str | None = None
 
 
 class DirectUploadCompleteRequest(BaseModel):
@@ -277,15 +279,23 @@ async def complete_direct_upload(
 
     signed_get_url = await asyncio.to_thread(tos_service.presign_tos_uri, tos_uri, expires=600)
     client_hint = body.client_meta.model_dump(exclude_none=True) if body.client_meta else None
+    saved_client_thumb = save_thumbnail_data_url(
+        body.client_meta.thumbnail_data_url if body.client_meta else None,
+        sess["asset_id"],
+    )
 
     if signed_get_url:
-        meta, thumb_url = await asyncio.gather(
-            asyncio.to_thread(probe_video_metadata, signed_get_url, actual_size, client_hint),
-            asyncio.to_thread(extract_thumbnail, signed_get_url, sess["asset_id"]),
-        )
+        if saved_client_thumb:
+            meta = await asyncio.to_thread(probe_video_metadata, signed_get_url, actual_size, client_hint)
+            thumb_url = saved_client_thumb
+        else:
+            meta, thumb_url = await asyncio.gather(
+                asyncio.to_thread(probe_video_metadata, signed_get_url, actual_size, client_hint),
+                asyncio.to_thread(extract_thumbnail, signed_get_url, sess["asset_id"]),
+            )
     else:
         meta = probe_video_metadata("", actual_size, client_hint)
-        thumb_url = "/media/sample/frame_16x9.png"
+        thumb_url = saved_client_thumb or "/media/sample/frame_16x9.png"
 
     direct_upload_sessions.pop(body.session_id)
 
