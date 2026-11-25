@@ -585,10 +585,11 @@ export function VideoUploadZone({
 
   if (isTransferring) {
     overallTone = 'uploading';
+    const activeTransferCount = Math.max(1, uploadingItems.length);
     overallHeadline =
       validItems.length === 1
         ? `正在上传 ${uploadingItems[0]?.name || queuedItems[0]?.name || '视频'}`
-        : `正在上传 ${doneItems.length + probingItems.length + cloudSyncItems.length}/${validItems.length} 个视频`;
+        : `正在上传 ${activeTransferCount} 个视频 · 已完成 ${doneItems.length}/${validItems.length}`;
     const metaParts = [`${formatBytes(transferredBytes)} / ${formatBytes(totalValidBytes)}`];
     if (totalSpeedBps > 0) metaParts.push(formatSpeed(totalSpeedBps));
     const etaStr = formatEta(overallEtaSec);
