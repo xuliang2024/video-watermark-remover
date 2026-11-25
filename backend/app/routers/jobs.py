@@ -8,6 +8,7 @@ import json
 import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import quote
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -769,8 +770,14 @@ def download_task_captions_zip(task_id: str, db: Session = Depends(get_db)):
                     zf.writestr(f"{stem}_{lang}{fmt}", build_subtitle_content(fmt, lang, caption_lines))
 
     mem.seek(0)
+    zip_filename = f"{stem}_captions.zip"
+    ascii_fallback = zip_filename.encode("ascii", "ignore").decode("ascii").strip("_- ") or "captions.zip"
+    if not ascii_fallback.endswith(".zip"):
+        ascii_fallback = "captions.zip"
     return StreamingResponse(
         mem,
         media_type="application/zip",
-        headers={"Content-Disposition": f'attachment; filename="{stem}_captions.zip"'},
+        headers={
+            "Content-Disposition": f"attachment; filename=\"{ascii_fallback}\"; filename*=UTF-8''{quote(zip_filename, safe='')}"
+        },
     )
