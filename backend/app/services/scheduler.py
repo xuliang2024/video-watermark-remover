@@ -13,7 +13,12 @@ from ..config import get_runtime_config, get_settings
 from ..constants import INPAINT_OPERATOR_ID, LAS_ERROR_HINTS
 from ..db import SessionLocal
 from ..models import BatchJob, BillingRecord, MediaAsset, OperatorTask, TaskLog
-from .volc_las import LasApiError, las_client
+from .volc_las import (
+    LasApiError,
+    las_client,
+    normalize_live_inpaint_result,
+    normalize_live_translate_result,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +80,18 @@ def finalize_task_completed(db: Session, task: OperatorTask, data: dict) -> None
     task.business_code = "0"
     task.error_msg = ""
 
+    req_payload = json.loads(task.request_payload_json or "{}")
+    task.bill_minutes = round(task.estimated_bill_min, 2)
+    task.cost_cny = round(task.bill_minutes * task.unit_price, 2)
+
     if task.job_type == "inpaint":
+        if task.execution_mode == "live":
+            data = normalize_live_inpaint_result(
+                data,
+                req_payload,
+                started_at=task.started_at,
+                finished_at=now,
+            )
         task.output_video_url = data.get("output_video_url") or task.output_video_url
         task.inpainted_video_path = data.get("inpainted_video_path") or task.inpainted_video_path
         task.subtitle_bbox = data.get("subtitle_bbox") or task.subtitle_bbox
@@ -84,6 +100,18 @@ def finalize_task_completed(db: Session, task: OperatorTask, data: dict) -> None
             task.output_fps = float(data["output_fps"])
         task.expires_at = now + timedelta(hours=24)
     else:
+        if task.execution_mode == "live" or "translated_videos" in data:
+            res_hint = task.file_meta.split("·")[0].strip() if task.file_meta else "1920×1080"
+            data = normalize_live_translate_result(
+                data,
+                req_payload,
+                filename=task.filename,
+                resolution=res_hint,
+                bill_minutes=task.bill_minutes,
+                total_cost=task.cost_cny,
+                started_at=task.started_at,
+                finished_at=now,
+            )
         cards = data.get("cards") or []
         if cards:
             task.output_video_url = cards[0].get("video_url") or task.output_video_url
@@ -93,8 +121,6 @@ def finalize_task_completed(db: Session, task: OperatorTask, data: dict) -> None
         task.expires_at = now + timedelta(hours=72)
 
     task.result_json = json.dumps(data, ensure_ascii=False)
-    task.bill_minutes = round(task.estimated_bill_min, 2)
-    task.cost_cny = round(task.bill_minutes * task.unit_price, 2)
 
     if not already_completed:
         batch = db.query(BatchJob).filter(BatchJob.id == task.batch_id).first()

@@ -165,11 +165,16 @@ def test_las_payload_builders_and_detection_modes():
     assert tr_payload["enable_video_inpaint"] is True
     assert tr_payload["output_dubbing_audio"] is True
     assert "video_inpaint_params" in tr_payload
-    assert tr_payload["subtitle_style"]["font_size"] == 60
+    assert "subtitle_style" not in tr_payload
+    assert tr_payload["subtitle_font_size"] == 60
+    assert tr_payload["subtitle_font_by_language"] == ["NotoSans-Regular", "NotoSansJP-Regular", "NotoSansKR-Regular"]
+    assert tr_payload["subtitle_background_color"] == "#00000000"
 
 
 @pytest.mark.asyncio
 async def test_volcengine_las_live_http_submit_and_poll():
+    from app.services.volc_las import normalize_live_translate_result
+
     update_runtime_config(
         {
             "execution_mode": "live",
@@ -180,13 +185,15 @@ async def test_volcengine_las_live_http_submit_and_poll():
     )
     try:
         las = VolcengineLasClient()
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        mock_resp.json.return_value = {
+        mock_ok = MagicMock()
+        mock_ok.status_code = 200
+        mock_ok.text = '{"metadata":{"task_id":"task-volc-live-001","task_status":"PENDING","business_code":"0","error_msg":""}}'
+        mock_ok.json.return_value = {
             "metadata": {"task_id": "task-volc-live-001", "task_status": "PENDING", "business_code": "0", "error_msg": ""}
         }
 
-        with patch("httpx.AsyncClient.post", new=AsyncMock(return_value=mock_resp)) as mocked_post:
+        # 1) las_video_inpaint_pro does NOT send callback (not supported upstream)
+        with patch("httpx.AsyncClient.post", new=AsyncMock(return_value=mock_ok)) as mocked_post:
             res = await las.submit_operator(
                 "las_video_inpaint_pro",
                 "v1",
@@ -198,7 +205,69 @@ async def test_volcengine_las_live_http_submit_and_poll():
             assert call_args.args[0] == "https://operator.las.cn-beijing.volces.com/api/v1/submit"
             assert call_args.kwargs["headers"]["Authorization"] == "Bearer las-test-secret-key"
             assert call_args.kwargs["json"]["operator_id"] == "las_video_inpaint_pro"
-            assert call_args.kwargs["json"]["callback"]["url"] == "https://api.example.com/api/webhooks/las-callback"
+            assert "callback" not in call_args.kwargs["json"]
+
+        # 2) las_video_translate sends callback, and auto-retries without callback if account lacks callback whitelist
+        mock_cb_err = MagicMock()
+        mock_cb_err.status_code = 400
+        mock_cb_err.text = '{"metadata":{"task_status":"FAILED","business_code":"Parameter.Invalid","error_msg":"callback is not enabled for this operator/account"}}'
+        mock_cb_err.json.return_value = {
+            "metadata": {
+                "task_status": "FAILED",
+                "business_code": "Parameter.Invalid",
+                "error_msg": "callback is not enabled for this operator/account",
+            }
+        }
+        with patch("httpx.AsyncClient.post", new=AsyncMock(side_effect=[mock_cb_err, mock_ok])) as mocked_post2:
+            res2 = await las.submit_operator(
+                "las_video_translate",
+                "v1",
+                {"video_url": "tos://cleanframe-bucket/a.mp4", "output_tos_path": "tos://cleanframe-bucket/out/"},
+                callback_url="https://api.example.com/api/webhooks/las-callback",
+            )
+            assert res2["metadata"]["task_id"] == "task-volc-live-001"
+            assert mocked_post2.call_count == 2
+            assert "callback" in mocked_post2.call_args_list[0].kwargs["json"]
+            assert "callback" not in mocked_post2.call_args_list[1].kwargs["json"]
+
+        # 3) Verify live translate Poll response normalization
+        norm = normalize_live_translate_result(
+            {
+                "video_duration": 12.05,
+                "translated_videos": [
+                    {
+                        "language": "en-US",
+                        "type": "translated_video",
+                        "tos_path": "tos://cleanframe-bucket/out/ep1_en-US.mp4",
+                        "presigned_url": "https://example.com/ep1_en-US.mp4",
+                    }
+                ],
+                "translated_captions": [
+                    {
+                        "language": "en-US",
+                        "type": "translated_caption",
+                        "format": ".srt",
+                        "tos_path": "tos://cleanframe-bucket/out/ep1_en-US.srt",
+                        "presigned_url": "",
+                    }
+                ],
+                "repaired_videos": [
+                    {
+                        "task_id": "repair-123",
+                        "type": "repaired_video",
+                        "format": "mp4",
+                        "tos_path": "tos://cleanframe-bucket/out/repaired.mp4",
+                        "presigned_url": "https://example.com/repaired.mp4",
+                        "video_duration": 12.05,
+                    }
+                ],
+            },
+            {"audio_language": "zh-CN", "output_languages": ["en-US"], "enable_video_inpaint": True},
+            filename="ep1.mp4",
+        )
+        assert len(norm["cards"]) == 1
+        assert norm["cards"][0]["video_url"] == "https://example.com/ep1_en-US.mp4"
+        assert norm["repaired_video"]["task_id"] == "repair-123"
     finally:
         update_runtime_config({"execution_mode": "mock", "las_api_key": "", "tos_bucket": ""})
 

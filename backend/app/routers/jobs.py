@@ -9,8 +9,9 @@ import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
 from sqlalchemy.orm import Session
 
 from ..config import get_runtime_config, get_settings
@@ -584,6 +585,18 @@ def cancel_batch(batch_id: str, db: Session = Depends(get_db)):
     return {"id": batch.id, "cancelled_tasks": cancelled_count, "status": batch.status}
 
 
+def _resolve_playable_url(raw_url: str | None, tos_uri: str | None = None) -> str | None:
+    if tos_uri and tos_uri.startswith("tos://"):
+        signed = tos_service.presign_tos_uri(tos_uri, expires=7200)
+        if signed:
+            return signed
+    if raw_url and raw_url.startswith("tos://"):
+        signed = tos_service.presign_tos_uri(raw_url, expires=7200)
+        if signed:
+            return signed
+    return raw_url
+
+
 @router.get("/api/tasks/{task_id}")
 def get_task_detail(task_id: str, db: Session = Depends(get_db)):
     task = db.query(OperatorTask).filter(OperatorTask.id == task_id).first()
@@ -591,13 +604,30 @@ def get_task_detail(task_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="任务不存在")
     result_data = json.loads(task.result_json or "{}")
     request_payload = json.loads(task.request_payload_json or "{}")
+
+    if result_data.get("cards"):
+        for c in result_data["cards"]:
+            c["video_url"] = _resolve_playable_url(c.get("video_url"), c.get("tos_path"))
+            if c.get("audio_url") or c.get("audio_tos_path"):
+                c["audio_url"] = _resolve_playable_url(c.get("audio_url"), c.get("audio_tos_path"))
+    if result_data.get("repaired_video"):
+        rep = result_data["repaired_video"]
+        rep["url"] = _resolve_playable_url(rep.get("url"), rep.get("tos_path"))
+
+    input_playable = _resolve_playable_url(task.input_video_url)
+    output_playable = _resolve_playable_url(task.output_video_url, task.inpainted_video_path)
+    repaired_playable = _resolve_playable_url(
+        task.repaired_video_url,
+        (result_data.get("repaired_video") or {}).get("tos_path"),
+    )
+
     base = _serialize_task_row(task)
     base.update(
         {
-            "input_video_url": task.input_video_url,
-            "output_video_url": task.output_video_url,
+            "input_video_url": input_playable,
+            "output_video_url": output_playable,
             "inpainted_video_path": task.inpainted_video_path,
-            "repaired_video_url": task.repaired_video_url,
+            "repaired_video_url": repaired_playable,
             "subtitle_bbox": task.subtitle_bbox,
             "output_resolution": task.output_resolution or "1920x1080",
             "output_fps": task.output_fps or 29.97,
@@ -631,20 +661,65 @@ def retry_task(task_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/api/tasks/{task_id}/download")
-def download_task_output(task_id: str, db: Session = Depends(get_db)):
+def download_task_output(
+    task_id: str,
+    lang: str | None = Query(default=None),
+    kind: str = Query(default="video"),
+    db: Session = Depends(get_db),
+):
     task = db.query(OperatorTask).filter(OperatorTask.id == task_id).first()
     if not task:
         raise HTTPException(status_code=404, detail="任务不存在")
 
     settings = get_settings()
-    if task.output_video_url and task.output_video_url.startswith("/media/outputs/"):
-        rel = task.output_video_url.removeprefix("/media/outputs/")
+    stem = Path(task.filename).stem
+    result_data = json.loads(task.result_json or "{}")
+
+    target_url: str | None = None
+    target_tos: str | None = None
+    dl_name = f"{stem}_clean.mp4"
+
+    if kind == "repaired":
+        rep = result_data.get("repaired_video") or {}
+        target_tos = rep.get("tos_path")
+        target_url = rep.get("url") or task.repaired_video_url
+        dl_name = f"{stem}_repaired.mp4"
+    elif task.job_type == "translate":
+        cards = result_data.get("cards") or []
+        chosen = next((c for c in cards if lang and c.get("code") == lang), cards[0] if cards else None)
+        if chosen:
+            code = chosen.get("code") or lang or "out"
+            if kind == "audio" and (chosen.get("audio_tos_path") or chosen.get("audio_url")):
+                target_tos = chosen.get("audio_tos_path")
+                target_url = chosen.get("audio_url")
+                dl_name = f"{stem}_{code}_dubbing.wav"
+            else:
+                target_tos = chosen.get("tos_path")
+                target_url = chosen.get("video_url")
+                dl_name = f"{stem}_{code}.mp4"
+        else:
+            target_url = task.output_video_url
+    else:
+        target_tos = task.inpainted_video_path
+        target_url = task.output_video_url
+        dl_name = f"{stem}_inpainted.mp4"
+
+    if target_url and target_url.startswith("/media/outputs/"):
+        rel = target_url.removeprefix("/media/outputs/").split("?", 1)[0]
         fpath = settings.outputs_path / rel
         if fpath.exists():
-            return FileResponse(fpath, filename=fpath.name)
+            return FileResponse(fpath, filename=dl_name)
+
+    if target_tos and target_tos.startswith("tos://"):
+        signed_dl = tos_service.presign_tos_uri(target_tos, expires=3600, download_filename=dl_name)
+        if signed_dl:
+            return RedirectResponse(signed_dl, status_code=302)
+
+    if target_url and target_url.startswith(("http://", "https://")):
+        return RedirectResponse(target_url, status_code=302)
 
     if settings.sample_frame_path.exists():
-        return FileResponse(settings.sample_frame_path, filename=f"{Path(task.filename).stem}_preview.png")
+        return FileResponse(settings.sample_frame_path, filename=f"{stem}_preview.png")
     raise HTTPException(status_code=404, detail="产物文件暂不可用")
 
 
@@ -667,12 +742,26 @@ def download_task_captions_zip(task_id: str, db: Session = Depends(get_db)):
     with zipfile.ZipFile(mem, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
         if caption_files:
             for item in caption_files:
-                p = Path(item.get("path", ""))
-                if p.exists():
-                    zf.write(p, arcname=item["filename"])
-                else:
-                    content = build_subtitle_content(item.get("format", ".srt"), item.get("lang", "en-US"), caption_lines)
-                    zf.writestr(item["filename"], content)
+                arcname = item.get("filename") or f"{stem}_{item.get('lang', 'en-US')}{item.get('format', '.srt')}"
+                local_p = item.get("path")
+                if local_p and Path(local_p).exists():
+                    zf.write(Path(local_p), arcname=arcname)
+                    continue
+                tos_txt = tos_service.read_tos_text(item.get("tos_path"))
+                if tos_txt is not None:
+                    zf.writestr(arcname, tos_txt)
+                    continue
+                remote_url = item.get("url")
+                if remote_url and remote_url.startswith(("http://", "https://")):
+                    try:
+                        r = httpx.get(remote_url, timeout=10.0)
+                        if r.status_code == 200:
+                            zf.writestr(arcname, r.content)
+                            continue
+                    except Exception:
+                        pass
+                content = build_subtitle_content(item.get("format", ".srt"), item.get("lang", "en-US"), caption_lines)
+                zf.writestr(arcname, content)
         else:
             langs = result_data.get("target_langs") or ["en-US", "ja-JP", "ko-KR"]
             for lang in langs:

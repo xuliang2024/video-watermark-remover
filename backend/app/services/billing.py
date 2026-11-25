@@ -248,6 +248,45 @@ def build_inpaint_las_data(
     return data
 
 
+def _hex_with_opacity(hex_color: str, opacity_pct: float | int) -> str:
+    """Convert #RRGGBB + opacity (0~100) into #RRGGBBAA per Volcengine LAS spec."""
+    c = (hex_color or "#000000").strip()
+    if not c.startswith("#"):
+        c = f"#{c}"
+    rgb = c[1:7] if len(c) >= 7 else "000000"
+    alpha = max(0, min(255, int(round((float(opacity_pct) / 100.0) * 255.0))))
+    return f"#{rgb.upper()}{alpha:02X}"
+
+
+_SCRIPT_LOCKED_LANGS = {
+    "zh-CN",
+    "yue-CN",
+    "ja-JP",
+    "ko-KR",
+    "th-TH",
+    "ar-SA",
+    "hi-IN",
+    "he-IL",
+    "km-KH",
+    "lo-LA",
+    "my-MM",
+}
+_LATIN_COMPATIBLE_FONTS = {"NotoSans-Regular", "FiraGO-Regular"}
+
+
+def _resolve_font_for_language(lang_code: str, preferred_font: str) -> str:
+    """Ensure every target language receives a valid font ID accepted by Volcengine LAS."""
+    default_font = OUTPUT_LANG_MAP.get(lang_code, {}).get("font", "NotoSans-Regular")
+    pref = (preferred_font or "").strip()
+    if not pref or pref in ("NotoSans", "default"):
+        return default_font
+    if lang_code in _SCRIPT_LOCKED_LANGS:
+        return default_font
+    if pref in _LATIN_COMPATIBLE_FONTS or (lang_code == "en-US" and pref == "AtkinsonHyperlegible-Regular"):
+        return pref
+    return default_font
+
+
 def build_translate_las_data(
     video_url: str,
     output_tos_path: str,
@@ -255,10 +294,11 @@ def build_translate_las_data(
     subtitle_style: SubtitleStyleConfig,
 ) -> dict[str, Any]:
     """Construct exact `data` body for Volcengine `las_video_translate` v1 Submit API."""
+    target_langs = list(cfg.target_langs)
     data: dict[str, Any] = {
         "video_url": video_url,
         "audio_language": cfg.source_lang,
-        "output_languages": list(cfg.target_langs),
+        "output_languages": target_langs,
         "output_tos_path": output_tos_path,
         "dubbing_mode": cfg.dubbing_mode,
         "enable_fast_mode": cfg.fast_mode if cfg.dubbing_mode == "high_quality" else False,
@@ -270,28 +310,35 @@ def build_translate_las_data(
     }
 
     if cfg.burn_subtitles:
-        data["subtitle_style"] = {
-            "font_name": subtitle_style.font,
-            "font_size": subtitle_style.font_size,
-            "font_color": subtitle_style.font_color,
-            "bold": subtitle_style.bold,
-            "outline_color": subtitle_style.outline_color,
-            "outline_width": subtitle_style.outline_width,
-            "background_color": subtitle_style.bg_color,
-            "background_opacity": round(subtitle_style.bg_opacity / 100.0, 2),
-            "top_margin_ratio": round(subtitle_style.top_margin_ratio / 100.0, 2),
-            "width_ratio": round(subtitle_style.width_ratio / 100.0, 2),
-            "line_spacing": subtitle_style.line_spacing,
-        }
+        data["subtitle_font_by_language"] = [
+            _resolve_font_for_language(lang, subtitle_style.font) for lang in target_langs
+        ]
+        data["subtitle_font_size"] = max(8, min(128, int(round(subtitle_style.font_size))))
+        data["subtitle_font_color"] = subtitle_style.font_color
+        data["subtitle_bold"] = bool(subtitle_style.bold)
+        data["subtitle_outline_color"] = subtitle_style.outline_color
+        data["subtitle_outline_width"] = max(0.0, min(16.0, round(float(subtitle_style.outline_width), 2)))
+        data["subtitle_background_color"] = _hex_with_opacity(subtitle_style.bg_color, subtitle_style.bg_opacity)
+        data["subtitle_line_spacing"] = max(0.0, min(64.0, round(float(subtitle_style.line_spacing), 2)))
+        data["subtitle_width_ratio"] = max(0.1, min(1.0, round(subtitle_style.width_ratio / 100.0, 2)))
+        data["subtitle_top_margin_ratio"] = max(0.0, min(0.95, round(subtitle_style.top_margin_ratio / 100.0, 2)))
 
     if cfg.enable_inpaint:
         inpaint_cfg = cfg.inpaint_config or InpaintConfig()
-        data["video_inpaint_params"] = {
+        det_mode = resolve_inpaint_detection_mode(inpaint_cfg)
+        v_params: dict[str, Any] = {
             "model_level": inpaint_cfg.model_level,
-            "detection_mode": resolve_inpaint_detection_mode(inpaint_cfg),
-            "targets": list(inpaint_cfg.targets),
+            "detection_mode": det_mode,
             "return_subtitle_bbox": True,
+            "maximum_output_fps": inpaint_cfg.max_fps,
+            "maximum_resolution": inpaint_cfg.max_resolution,
+            "output_video_mode": inpaint_cfg.video_mode,
         }
+        if inpaint_cfg.locate_mode == "fixed" and inpaint_cfg.regions:
+            v_params["fixed_bboxes"] = [reg.bbox for reg in inpaint_cfg.regions]
+        elif det_mode == "precise":
+            v_params["targets"] = list(inpaint_cfg.targets)
+        data["video_inpaint_params"] = v_params
 
     return data
 

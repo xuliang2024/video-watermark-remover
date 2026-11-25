@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
@@ -17,9 +18,11 @@ from ..constants import (
     INPAINT_OPERATOR_VERSION,
     LAS_ERROR_HINTS,
     OUTPUT_LANG_MAP,
+    SOURCE_LANGUAGES,
     TRANSLATE_OPERATOR_ID,
     TRANSLATE_OPERATOR_VERSION,
 )
+from .tos_client import tos_service
 
 logger = logging.getLogger(__name__)
 
@@ -126,13 +129,25 @@ class VolcengineLasClient:
             "operator_version": operator_version,
             "data": data,
         }
+        # Volcengine LAS currently only supports `callback` on whitelisted operators (not las_video_inpaint_pro).
         cb = callback_url or cfg.get("callback_url") or ""
-        if _is_valid_callback_url(cb):
+        if operator_id == TRANSLATE_OPERATOR_ID and _is_valid_callback_url(cb):
             body["callback"] = {"url": cb}
 
         url = f"{cfg['las_base_url']}/submit"
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             resp = await client.post(url, headers=self._headers(api_key), json=body)
+            # Auto-fallback without callback if operator/account has not enabled webhook callbacks
+            if "callback" in body and (resp.status_code >= 400 or "callback" in resp.text.lower()):
+                try:
+                    probe_meta = (resp.json() or {}).get("metadata") or {}
+                    probe_err = str(probe_meta.get("error_msg") or resp.text).lower()
+                except Exception:
+                    probe_err = resp.text.lower()
+                if resp.status_code >= 400 and "callback" in probe_err:
+                    logger.info("LAS callback not enabled for %s, retrying submit without callback", operator_id)
+                    body_no_cb = {k: v for k, v in body.items() if k != "callback"}
+                    resp = await client.post(url, headers=self._headers(api_key), json=body_no_cb)
 
         if resp.status_code >= 400:
             detail = resp.text[:400]
@@ -145,10 +160,18 @@ class VolcengineLasClient:
                 bcode = f"HTTP.{resp.status_code}"
                 emsg = detail
             hint = LAS_ERROR_HINTS.get(bcode)
-            raise LasApiError(f"{bcode}: {hint or emsg}", bcode, resp.status_code)
+            full_msg = f"{emsg}（{hint}）" if (emsg and hint and emsg != hint) else (emsg or hint or detail)
+            raise LasApiError(f"{bcode}: {full_msg}", bcode, resp.status_code)
 
         payload = resp.json()
         meta = payload.get("metadata") or {}
+        bcode = str(meta.get("business_code") or "0")
+        tstatus = str(meta.get("task_status") or "").upper()
+        if tstatus == "FAILED" or (bcode not in ("", "0", "None") and not meta.get("task_id")):
+            emsg = str(meta.get("error_msg") or payload)
+            hint = LAS_ERROR_HINTS.get(bcode)
+            full_msg = f"{emsg}（{hint}）" if (emsg and hint and emsg != hint) else (emsg or hint)
+            raise LasApiError(f"{bcode}: {full_msg}", bcode, 400)
         if not meta.get("task_id"):
             raise LasApiError(f"LAS Submit 未返回 task_id: {payload}", "LAS.InvalidResponse", 502)
         return payload
@@ -398,6 +421,248 @@ class VolcengineLasClient:
             "caption_files": caption_files,
             "caption_lines": caption_lines,
         }
+
+
+SOURCE_LANG_NAME_MAP = {item["code"]: item["name"] for item in SOURCE_LANGUAGES}
+
+
+def _format_elapsed(started_at: datetime | None, finished_at: datetime | None) -> str:
+    if not started_at or not finished_at:
+        return "已完成"
+    s = started_at if started_at.tzinfo else started_at.replace(tzinfo=timezone.utc)
+    f = finished_at if finished_at.tzinfo else finished_at.replace(tzinfo=timezone.utc)
+    sec = max(1, int(round((f - s).total_seconds())))
+    m, r = divmod(sec, 60)
+    return f"{m} 分 {r:02d} 秒" if m > 0 else f"{r} 秒"
+
+
+def parse_srt_entries(srt_text: str, max_items: int = 10) -> list[dict[str, str]]:
+    """Parse real Volcengine .srt content into [{time, text}, ...] preview rows."""
+    if not srt_text:
+        return []
+    blocks = re.split(r"\r?\n\r?\n+", srt_text.strip())
+    entries: list[dict[str, str]] = []
+    for blk in blocks:
+        lines = [ln.strip() for ln in blk.splitlines() if ln.strip()]
+        if len(lines) < 2:
+            continue
+        time_idx = next((i for i, ln in enumerate(lines) if "-->" in ln), -1)
+        if time_idx == -1 or time_idx + 1 >= len(lines):
+            continue
+        raw_start = lines[time_idx].split("-->", 1)[0].strip()
+        # Normalize 00:00:03,420 -> 00:00:03
+        hhmmss = raw_start.split(",")[0].split(".")[0]
+        if len(hhmmss.split(":")) == 2:
+            hhmmss = f"00:{hhmmss}"
+        text_body = " ".join(lines[time_idx + 1 :]).strip()
+        # Strip ASS inline override tags if any
+        text_body = re.sub(r"\{\\[^}]*\}", "", text_body).strip()
+        if text_body:
+            entries.append({"time": hhmmss, "text": text_body})
+        if len(entries) >= max_items:
+            break
+    return entries
+
+
+def normalize_live_inpaint_result(
+    raw_data: dict[str, Any],
+    request_payload: dict[str, Any],
+    *,
+    started_at: datetime | None = None,
+    finished_at: datetime | None = None,
+) -> dict[str, Any]:
+    """Enrich Volcengine las_video_inpaint_pro Poll `data` with size, codec and elapsed metadata."""
+    data = dict(raw_data or {})
+    if "cards" in data or data.get("_normalized"):
+        return data
+
+    tos_path = data.get("inpainted_video_path")
+    size_bytes = tos_service.head_tos_uri(tos_path)
+    if size_bytes:
+        data["file_size_mb"] = round(max(0.05, size_bytes / (1024 * 1024)), 2)
+
+    data.setdefault("codec", request_payload.get("output_codec") or "h264")
+    data["elapsed_label"] = _format_elapsed(started_at, finished_at)
+
+    bbox = data.get("subtitle_bbox")
+    det_mode = request_payload.get("detection_mode") or "precise"
+    if bbox:
+        data["detected_summary"] = f"检出字幕区域 [{bbox}] · 模式 {det_mode}"
+    else:
+        targets = request_payload.get("targets") or []
+        data["detected_summary"] = (
+            f"已完成全帧擦除（{', '.join(targets)}）" if targets else f"已完成全帧擦除（{det_mode}）"
+        )
+    data["_normalized"] = True
+    return data
+
+
+def normalize_live_translate_result(
+    raw_data: dict[str, Any],
+    request_payload: dict[str, Any],
+    *,
+    filename: str = "video.mp4",
+    resolution: str = "1920×1080",
+    bill_minutes: float = 0.0,
+    total_cost: float = 0.0,
+    started_at: datetime | None = None,
+    finished_at: datetime | None = None,
+) -> dict[str, Any]:
+    """Convert real Volcengine `las_video_translate` Poll `data` (`translated_videos`, `translated_captions`, `repaired_videos`) into UI-ready structure while preserving raw fields."""
+    data = dict(raw_data or {})
+    if "cards" in data and "translated_videos" not in data:
+        return data
+
+    stem = Path(filename).stem
+    source_lang_code = str(request_payload.get("audio_language") or "zh-CN")
+    source_lang_name = SOURCE_LANG_NAME_MAP.get(source_lang_code, source_lang_code)
+    req_langs: list[str] = list(request_payload.get("output_languages") or [])
+
+    raw_videos: list[dict[str, Any]] = list(data.get("translated_videos") or [])
+    raw_captions: list[dict[str, Any]] = list(data.get("translated_captions") or [])
+    raw_repaired: list[dict[str, Any]] = list(data.get("repaired_videos") or [])
+
+    videos_by_lang: dict[str, dict[str, Any]] = {}
+    audios_by_lang: dict[str, dict[str, Any]] = {}
+    for item in raw_videos:
+        lang = str(item.get("language") or "")
+        if not lang:
+            continue
+        itype = str(item.get("type") or "translated_video")
+        if itype == "translated_audio":
+            audios_by_lang[lang] = item
+        else:
+            videos_by_lang[lang] = item
+            if lang not in req_langs:
+                req_langs.append(lang)
+
+    captions_by_lang: dict[str, list[dict[str, Any]]] = {}
+    caption_files: list[dict[str, Any]] = []
+    for cap in raw_captions:
+        lang = str(cap.get("language") or "")
+        fmt = str(cap.get("format") or ".srt")
+        if not fmt.startswith("."):
+            fmt = f".{fmt}"
+        t_path = cap.get("tos_path") or ""
+        p_url = cap.get("presigned_url") or ""
+        fname = Path(t_path).name if t_path else f"{stem}_{lang}{fmt}"
+        entry = {
+            "lang": lang,
+            "format": fmt,
+            "filename": fname,
+            "tos_path": t_path,
+            "url": p_url,
+        }
+        caption_files.append(entry)
+        captions_by_lang.setdefault(lang, []).append(entry)
+
+    font_cls_map = {"en-US": "lang-en", "ja-JP": "lang-ja", "ko-KR": "lang-ko"}
+    cards: list[dict[str, Any]] = []
+    parsed_by_lang: dict[str, list[dict[str, str]]] = {}
+
+    for lang in req_langs:
+        lang_info = OUTPUT_LANG_MAP.get(lang, {"code": lang, "name": lang})
+        v_item = videos_by_lang.get(lang, {})
+        a_item = audios_by_lang.get(lang, {})
+        v_tos = v_item.get("tos_path") or ""
+        v_url = v_item.get("presigned_url") or ""
+        v_bytes = tos_service.head_tos_uri(v_tos)
+        size_str = f"MP4 · {round(max(0.05, v_bytes / (1024 * 1024)), 2)} MB" if v_bytes else "MP4 · 云端成片"
+
+        lang_caps = captions_by_lang.get(lang, [])
+        cap_labels = [c["format"].lstrip(".").upper() for c in lang_caps]
+        if a_item:
+            cap_labels.append("WAV")
+
+        # Parse real translated subtitle lines from .srt (fallback to first text caption)
+        srt_item = next((c for c in lang_caps if c["format"] == ".srt"), lang_caps[0] if lang_caps else None)
+        if srt_item:
+            raw_txt = tos_service.read_tos_text(srt_item.get("tos_path"))
+            if not raw_txt and srt_item.get("url"):
+                try:
+                    r = httpx.get(srt_item["url"], timeout=8.0)
+                    if r.status_code == 200:
+                        raw_txt = r.content.decode("utf-8-sig", errors="replace")
+                except Exception:
+                    raw_txt = None
+            if raw_txt:
+                parsed_by_lang[lang] = parse_srt_entries(raw_txt, max_items=10)
+
+        cards.append(
+            {
+                "code": lang,
+                "label": f"{lang} · {lang_info['name']}",
+                "font_class": font_cls_map.get(lang, "lang-en"),
+                "size": size_str,
+                "captions": " + ".join(cap_labels) if cap_labels else "MP4",
+                "video_url": v_url,
+                "tos_path": v_tos,
+                "audio_url": a_item.get("presigned_url") or "",
+                "audio_tos_path": a_item.get("tos_path") or "",
+            }
+        )
+
+    # Assemble aligned caption_lines from real SRT outputs
+    short_key_map = {"zh-CN": "zh", "en-US": "en", "ja-JP": "ja", "ko-KR": "ko"}
+    caption_lines: list[dict[str, Any]] = []
+    max_len = max((len(v) for v in parsed_by_lang.values()), default=0)
+    for i in range(max_len):
+        primary_lang = req_langs[0] if req_langs else "en-US"
+        p_entries = parsed_by_lang.get(primary_lang, [])
+        t_code = p_entries[i]["time"] if i < len(p_entries) else f"00:00:{i * 3:02d}"
+        by_lang: dict[str, str] = {}
+        row: dict[str, Any] = {"time": t_code, "zh": f"原声片段 #{i + 1}", "en": "", "ja": "", "ko": ""}
+        for lang, entries in parsed_by_lang.items():
+            if i < len(entries):
+                txt = entries[i]["text"]
+                by_lang[lang] = txt
+                sk = short_key_map.get(lang)
+                if sk:
+                    row[sk] = txt
+        if not row["en"] and by_lang:
+            row["en"] = next(iter(by_lang.values()))
+        row["by_lang"] = by_lang
+        caption_lines.append(row)
+
+    repaired_obj = None
+    if raw_repaired:
+        rep0 = raw_repaired[0]
+        rep_tos = rep0.get("tos_path") or ""
+        rep_bytes = tos_service.head_tos_uri(rep_tos)
+        rep_dur = float(rep0.get("video_duration") or data.get("video_duration") or 0.0)
+        dm, ds = divmod(max(0, int(round(rep_dur))), 60)
+        repaired_obj = {
+            "task_id": rep0.get("task_id") or "",
+            "resolution": resolution,
+            "duration": f"{dm}:{ds:02d}" if rep_dur > 0 else "已同步",
+            "size_mb": round(max(0.05, rep_bytes / (1024 * 1024)), 2) if rep_bytes else 0.0,
+            "url": rep0.get("presigned_url") or "",
+            "tos_path": rep_tos,
+        }
+
+    total_files = len(cards) + len(caption_files) + len(audios_by_lang) + (1 if repaired_obj else 0)
+    enable_inpaint = bool(request_payload.get("enable_video_inpaint"))
+
+    data.update(
+        {
+            "source_lang": source_lang_name,
+            "source_lang_code": source_lang_code,
+            "target_langs": req_langs,
+            "dubbing_mode": request_payload.get("dubbing_mode") or "high_quality",
+            "fast_mode": bool(request_payload.get("enable_fast_mode")),
+            "enable_inpaint": enable_inpaint,
+            "elapsed_label": _format_elapsed(started_at, finished_at),
+            "total_files": max(1, total_files),
+            "bill_minutes": round(bill_minutes, 2),
+            "total_cost": round(total_cost, 2),
+            "repaired_video": repaired_obj,
+            "cards": cards,
+            "caption_files": caption_files,
+            "caption_lines": caption_lines,
+            "_normalized": True,
+        }
+    )
+    return data
 
 
 las_client = VolcengineLasClient()
