@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api, triggerDownload } from '../api/client';
 import type { DashboardOverview, TaskRow, WorkspaceViewId } from '../types';
+import { formatTaskDurationTooltip, resolveTaskDuration } from '../utils/calc';
 
 interface Props {
   searchQuery: string;
@@ -21,11 +22,16 @@ export function OverviewView({ searchQuery, onNavigate, onToast, region }: Props
   const [filter, setFilter] = useState('all');
   const [data, setData] = useState<DashboardOverview | null>(null);
   const [loading, setLoading] = useState(true);
+  const [fetchedAt, setFetchedAt] = useState(() => Date.now());
+  const [nowMs, setNowMs] = useState(() => Date.now());
 
   async function loadOverview() {
     try {
       const res = await api.getOverview(filter, searchQuery);
+      const ts = Date.now();
       setData(res);
+      setFetchedAt(ts);
+      setNowMs(ts);
     } catch (err: any) {
       onToast(err.message || '加载任务总览失败');
     } finally {
@@ -38,6 +44,13 @@ export function OverviewView({ searchQuery, onNavigate, onToast, region }: Props
     const timer = window.setInterval(loadOverview, 4000);
     return () => window.clearInterval(timer);
   }, [filter, searchQuery]);
+
+  const hasRunningTask = Boolean(data?.tasks.some((t) => t.status === 'running'));
+  useEffect(() => {
+    if (!hasRunningTask) return;
+    const tick = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(tick);
+  }, [hasRunningTask]);
 
   async function handleRetry(e: React.MouseEvent, task: TaskRow) {
     e.stopPropagation();
@@ -148,6 +161,7 @@ export function OverviewView({ searchQuery, onNavigate, onToast, region }: Props
           <div>方案</div>
           <div>状态</div>
           <div>进度</div>
+          <div>处理时长</div>
           <div>计费用量</div>
           <div>提交时间</div>
           <div></div>
@@ -170,6 +184,8 @@ export function OverviewView({ searchQuery, onNavigate, onToast, region }: Props
                     : t.status === 'queued'
                       ? '排队'
                       : '—';
+              const durationText = resolveTaskDuration(t, nowMs, fetchedAt);
+              const durationTip = formatTaskDurationTooltip(t, durationText);
 
               return (
                 <div
@@ -192,25 +208,33 @@ export function OverviewView({ searchQuery, onNavigate, onToast, region }: Props
                       <span className="file-meta">{t.meta}</span>
                     </div>
                   </div>
-                  <div className="cell-stack">
+                  <div className="cell-stack task-scheme-cell">
                     <span className="scheme-main">{t.scheme}</span>
                     <span className="scheme-sub">{t.sub_scheme}</span>
                   </div>
-                  <div>
+                  <div className="task-status-cell">
                     <span className={`status-pill ${t.status}`}>
                       <span className="dot"></span>
                       {t.status_label}
                     </span>
                   </div>
-                  <div className="progress-cell">
+                  <div className="progress-cell task-progress-cell">
                     <div className="progress-track">
                       <div className={`progress-fill ${barClass}`} style={{ width: `${barWidth}%` }}></div>
                     </div>
                     <span className="progress-pct">{pctLabel}</span>
                   </div>
-                  <div className="cell-mono">{t.usage}</div>
-                  <div className="cell-time">{t.time}</div>
-                  <div style={{ display: 'flex', justifyContent: 'center' }}>
+                  <div
+                    className={`cell-mono task-duration-cell${t.status === 'running' ? ' is-running' : durationText === '—' ? ' is-empty' : ''}`}
+                    data-label="耗时"
+                    title={durationTip}
+                  >
+                    {t.status === 'running' && <span className="duration-live-dot" aria-hidden="true"></span>}
+                    <span>{durationText}</span>
+                  </div>
+                  <div className="cell-mono task-usage-cell" data-label="用量">{t.usage}</div>
+                  <div className="cell-time task-time-cell" data-label="提交">{t.time}</div>
+                  <div className="task-action-cell" style={{ display: 'flex', justifyContent: 'center' }}>
                     {t.status === 'failed' || t.status === 'timeout' ? (
                       <button
                         className="btn btn-ghost btn-xs"

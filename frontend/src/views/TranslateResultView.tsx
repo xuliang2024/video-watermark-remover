@@ -114,7 +114,10 @@ export function TranslateResultView({ taskId, onNavigate, onToast }: Props) {
           <p className="page-subtitle">
             {res.source_lang || '中文（简体）'} → {cards.map((c) => c.label.split(' · ')[1] || c.code).join(' / ')} ·{' '}
             {task?.scheme || '高质量配音'}
-            {res.enable_inpaint !== false ? ' · 已启用去水印前处理' : ''} · 总耗时 {res.elapsed_label || '已完成'}
+            {res.enable_inpaint !== false ? ' · 已启用去水印前处理' : ''} · 处理时长{' '}
+            {task?.processing_duration && task.processing_duration !== '—'
+              ? task.processing_duration
+              : res.elapsed_label || '已完成'}
           </p>
         </div>
         <div className="head-right">
@@ -145,6 +148,7 @@ export function TranslateResultView({ taskId, onNavigate, onToast }: Props) {
             </span>
           </div>
           <span className="summary-meta">
+            {task?.processing_duration && task.processing_duration !== '—' ? `处理时长 ${task.processing_duration} · ` : ''}
             计费 {(task?.bill_minutes ?? 0).toFixed(2)} 分钟 · ¥{(task?.cost_cny ?? 0).toFixed(2)}
             {res.inpaint_extra_cost ? `（含去水印 ¥${Number(res.inpaint_extra_cost).toFixed(2)}）` : ''}
           </span>

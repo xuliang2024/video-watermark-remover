@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../api/client';
 import type { BatchDetail, WorkspaceViewId } from '../types';
+import { formatTaskDurationTooltip, resolveTaskDuration } from '../utils/calc';
 
 interface Props {
   batchId: string;
@@ -12,12 +13,17 @@ export function MonitorView({ batchId, onNavigate, onToast }: Props) {
   const [batch, setBatch] = useState<BatchDetail | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [fetchedAt, setFetchedAt] = useState(() => Date.now());
+  const [nowMs, setNowMs] = useState(() => Date.now());
   const logRef = useRef<HTMLDivElement>(null);
 
   async function loadBatch() {
     try {
       const res = await api.getBatchDetail(batchId || 'latest');
+      const ts = Date.now();
       setBatch(res);
+      setFetchedAt(ts);
+      setNowMs(ts);
       setNotFound(false);
     } catch {
       setNotFound(true);
@@ -29,6 +35,13 @@ export function MonitorView({ batchId, onNavigate, onToast }: Props) {
     const timer = window.setInterval(loadBatch, 2500);
     return () => window.clearInterval(timer);
   }, [batchId]);
+
+  const hasRunningTask = Boolean(batch?.queue.some((q) => q.status === 'running'));
+  useEffect(() => {
+    if (!hasRunningTask) return;
+    const tick = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(tick);
+  }, [hasRunningTask]);
 
   useEffect(() => {
     if (logRef.current) {
@@ -135,7 +148,8 @@ export function MonitorView({ batchId, onNavigate, onToast }: Props) {
               <div>文件</div>
               <div>状态</div>
               <div>进度</div>
-              <div>预计完成</div>
+              <div>处理时长</div>
+              <div>完成 / 预计</div>
             </div>
             <div>
               {batch.queue.map((q) => {
@@ -143,6 +157,8 @@ export function MonitorView({ batchId, onNavigate, onToast }: Props) {
                 const barW = q.status === 'completed' ? 100 : q.status === 'running' ? q.progress : 3;
                 const pct = q.status === 'completed' ? '100%' : q.status === 'running' ? `${q.progress}%` : '—';
                 const clickable = q.status === 'completed';
+                const durationText = resolveTaskDuration(q, nowMs, fetchedAt);
+                const durationTip = formatTaskDurationTooltip(q, durationText);
                 return (
                   <div
                     key={q.id}
@@ -154,26 +170,34 @@ export function MonitorView({ batchId, onNavigate, onToast }: Props) {
                       }
                     }}
                   >
-                    <div className="cell-stack">
+                    <div className="cell-stack queue-file-cell">
                       <span className="file-name">{q.file}</span>
                       <span className="file-meta">
                         {q.meta} · {q.status === 'completed' ? `计费 ${q.bill_minutes.toFixed(2)} 分钟` : `预计 ${q.estimated_bill_min.toFixed(2)} 分钟`}
                       </span>
                     </div>
-                    <div>
+                    <div className="queue-status-cell">
                       <span className={`status-pill ${q.status}`}>
                         <span className="dot"></span>
                         {q.status_label}
                       </span>
                     </div>
-                    <div className="progress-cell">
+                    <div className="progress-cell queue-progress-cell">
                       <div className="progress-track">
                         <div className={`progress-fill ${barClass}`} style={{ width: `${barW}%` }}></div>
                       </div>
                       <span className="progress-pct">{pct}</span>
                     </div>
                     <div
-                      className="mono"
+                      className={`cell-mono queue-duration-cell${q.status === 'running' ? ' is-running' : durationText === '—' ? ' is-empty' : ''}`}
+                      data-label="耗时"
+                      title={durationTip}
+                    >
+                      {q.status === 'running' && <span className="duration-live-dot" aria-hidden="true"></span>}
+                      <span>{durationText}</span>
+                    </div>
+                    <div
+                      className="mono queue-eta-cell"
                       style={{ fontSize: 10, color: q.status === 'running' ? 'var(--blue-text)' : 'var(--text-dim)' }}
                     >
                       {q.eta}

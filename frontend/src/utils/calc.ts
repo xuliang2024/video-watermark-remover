@@ -1,4 +1,4 @@
-import type { InpaintConfig, MediaAsset, TranslateConfig } from '../types';
+import type { InpaintConfig, MediaAsset, TaskRow, TranslateConfig } from '../types';
 
 const CAP_MAP: Record<string, number> = {
   '720p': 1280 * 720,
@@ -103,4 +103,48 @@ export function formatEta(seconds: number | null): string {
   if (m < 60) return `剩余 ${m} 分 ${String(r).padStart(2, '0')} 秒`;
   const h = Math.floor(m / 60);
   return `剩余 ${h} 时 ${m % 60} 分`;
+}
+
+export function formatProcessingDuration(seconds: number | null | undefined): string {
+  if (seconds == null || !Number.isFinite(seconds) || seconds < 0) return '—';
+  const sec = Math.floor(seconds);
+  if (sec < 60) return `${sec}秒`;
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  if (h > 0) return `${h}小时${String(m).padStart(2, '0')}分${String(s).padStart(2, '0')}秒`;
+  return `${m}分${String(s).padStart(2, '0')}秒`;
+}
+
+export function resolveTaskDuration(task: TaskRow, nowMs: number, fetchedAtMs: number): string {
+  if (task.status === 'running' && task.elapsed_seconds != null) {
+    const deltaSec = Math.max(0, Math.floor((nowMs - fetchedAtMs) / 1000));
+    return formatProcessingDuration(task.elapsed_seconds + deltaSec);
+  }
+  if (task.processing_duration) return task.processing_duration;
+  if (task.elapsed_seconds != null) return formatProcessingDuration(task.elapsed_seconds);
+  return '—';
+}
+
+function formatClockHMS(iso?: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  const ss = String(d.getSeconds()).padStart(2, '0');
+  return `${hh}:${mm}:${ss}`;
+}
+
+export function formatTaskDurationTooltip(task: TaskRow, durationText: string): string {
+  if (task.status === 'queued') return '排队等待调度';
+  const startStr = formatClockHMS(task.started_at);
+  const finStr = formatClockHMS(task.finished_at);
+  if (task.status === 'running') {
+    return startStr ? `开始于 ${startStr} · 已处理 ${durationText}` : `正在处理中 · 已处理 ${durationText}`;
+  }
+  if (startStr && finStr) {
+    return `开始 ${startStr} · 结束 ${finStr} · 处理时长 ${durationText}`;
+  }
+  return durationText !== '—' ? `处理时长 ${durationText}` : '暂无处理时长记录';
 }

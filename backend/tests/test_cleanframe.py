@@ -686,4 +686,60 @@ def test_direct_tos_upload_single_multipart_and_fallback(client: TestClient):
         assert len(abort_calls) == 1
 
 
+def test_task_processing_duration_serialization_and_retry_reset(client: TestClient):
+    from datetime import datetime, timedelta, timezone
+    from app.services.volc_las import format_elapsed_seconds, _format_elapsed
+
+    assert format_elapsed_seconds(None, compact=True) == "—"
+    assert format_elapsed_seconds(42, compact=True) == "42秒"
+    assert format_elapsed_seconds(330, compact=True) == "5分30秒"
+    assert format_elapsed_seconds(3774, compact=True) == "1小时02分54秒"
+
+    t0 = datetime(2026, 11, 25, 10, 30, 41, tzinfo=timezone.utc)
+    t1 = t0 + timedelta(seconds=3774)
+    assert _format_elapsed(t0, t1) == "1 小时 02 分 54 秒"
+
+    ov = client.get("/api/dashboard/overview")
+    assert ov.status_code == 200
+    tasks = {t["id"]: t for t in ov.json()["tasks"]}
+
+    # Completed seed task: 4m46s
+    done_task = tasks["task-20261113-01a8"]
+    assert done_task["elapsed_seconds"] == 286
+    assert done_task["processing_duration"] == "4分46秒"
+    assert done_task["started_at"] and done_task["finished_at"]
+
+    # Running seed task: live elapsed seconds >= 700
+    running_task = tasks["task-20261113-03f1"]
+    assert running_task["elapsed_seconds"] >= 700
+    assert "分" in running_task["processing_duration"]
+
+    # Pending seed task: no processing duration yet
+    pending_task = tasks["task-20261113-05b2"]
+    assert pending_task["elapsed_seconds"] is None
+    assert pending_task["processing_duration"] == "—"
+
+    # Failed seed task ran for 2m14s before failing, then retry resets timestamps
+    failed_task = tasks["task-20261113-04d9"]
+    assert failed_task["elapsed_seconds"] == 134
+    assert failed_task["processing_duration"] == "2分14秒"
+
+    retried = client.post("/api/tasks/task-20261113-04d9/retry")
+    assert retried.status_code == 200
+    r_data = retried.json()
+    assert r_data["raw_status"] == "PENDING"
+    assert r_data["elapsed_seconds"] is None
+    assert r_data["processing_duration"] == "—"
+    assert r_data["started_at"] is None
+    assert r_data["finished_at"] is None
+
+    # CSV export includes processing_duration column
+    csv_resp = client.get("/api/tasks/export")
+    assert csv_resp.status_code == 200
+    header_line = csv_resp.text.lstrip("\ufeff").splitlines()[0]
+    assert "processing_duration" in header_line
+    assert "4分46秒" in csv_resp.text
+
+
+
 

@@ -47,7 +47,7 @@ from ..services.billing import (
 )
 from ..services.scheduler import append_log, recompute_batch_summary
 from ..services.tos_client import tos_service
-from ..services.volc_las import build_subtitle_content
+from ..services.volc_las import build_subtitle_content, format_elapsed_seconds
 
 router = APIRouter(tags=["jobs"])
 
@@ -71,6 +71,40 @@ def _next_batch_code(db: Session) -> str:
     return f"B-{max_num + 1:03d}" if max_num < 100 else f"B-{max_num + 1}"
 
 
+def _as_utc(dt: datetime | None) -> datetime | None:
+    if dt is None:
+        return None
+    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
+
+def _to_iso_utc(dt: datetime | None) -> str | None:
+    utc_dt = _as_utc(dt)
+    return utc_dt.isoformat() if utc_dt else None
+
+
+def _calc_task_elapsed_seconds(t: OperatorTask) -> int | None:
+    start = _as_utc(t.started_at)
+    fin = _as_utc(t.finished_at)
+    sub = _as_utc(t.submitted_at)
+
+    if t.status == "PENDING":
+        return None
+    if t.status == "RUNNING":
+        anchor = start or sub
+        if not anchor:
+            return None
+        return max(0, int((datetime.now(timezone.utc) - anchor).total_seconds()))
+    if t.status == "COMPLETED":
+        anchor = start or sub
+        if anchor and fin:
+            return max(1, int(round((fin - anchor).total_seconds())))
+        return None
+    # FAILED / TIMEOUT / CANCELLED: only report processing time if execution actually started
+    if start and fin:
+        return max(1, int(round((fin - start).total_seconds())))
+    return None
+
+
 def _serialize_task_row(t: OperatorTask) -> dict:
     ui_status, ui_label = STATUS_MAP_UI.get(t.status, ("queued", t.status))
     usage_str = f"{t.bill_minutes:.2f} 分" if t.status == "COMPLETED" and t.bill_minutes > 0 else "—"
@@ -79,6 +113,8 @@ def _serialize_task_row(t: OperatorTask) -> dict:
     else:
         target_view = "monitor"
     submit_hm = t.submitted_at.astimezone().strftime("%H:%M") if t.submitted_at else "—"
+    elapsed_sec = _calc_task_elapsed_seconds(t)
+    processing_duration = format_elapsed_seconds(elapsed_sec, compact=True)
     return {
         "id": t.id,
         "batch_id": t.batch_id,
@@ -99,6 +135,10 @@ def _serialize_task_row(t: OperatorTask) -> dict:
         "cost_cny": t.cost_cny,
         "eta": t.eta_label,
         "time": submit_hm,
+        "elapsed_seconds": elapsed_sec,
+        "processing_duration": processing_duration,
+        "started_at": _to_iso_utc(t.started_at),
+        "finished_at": _to_iso_utc(t.finished_at),
         "error_msg": t.error_msg,
         "remote_task_id": t.remote_task_id,
         "execution_mode": t.execution_mode,
@@ -190,7 +230,7 @@ def export_tasks_csv(db: Session = Depends(get_db)):
     buf = io.StringIO()
     buf.write("\ufeff")
     writer = csv.writer(buf)
-    writer.writerow(["task_id", "remote_task_id", "file", "operator", "scheme", "targets", "status", "bill_minutes", "cost_cny", "submit_time"])
+    writer.writerow(["task_id", "remote_task_id", "file", "operator", "scheme", "targets", "status", "processing_duration", "bill_minutes", "cost_cny", "submit_time"])
     for t in tasks:
         row = _serialize_task_row(t)
         writer.writerow([
@@ -201,6 +241,7 @@ def export_tasks_csv(db: Session = Depends(get_db)):
             t.scheme_label,
             t.sub_scheme_label,
             row["status_label"],
+            row["processing_duration"],
             f"{t.bill_minutes:.2f}",
             f"{t.cost_cny:.2f}",
             row["time"],
@@ -663,6 +704,8 @@ def retry_task(task_id: str, db: Session = Depends(get_db)):
     task.business_code = "0"
     task.error_msg = ""
     task.eta_label = "重新排队"
+    task.started_at = None
+    task.finished_at = None
     task.is_seed = False
     batch = db.query(BatchJob).filter(BatchJob.id == task.batch_id).first()
     if batch:

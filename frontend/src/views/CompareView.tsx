@@ -86,8 +86,11 @@ export function CompareView({ taskId, onNavigate, onToast }: Props) {
           </button>
           <h1 className="page-title">修复完成 · {task?.file || '未选择任务'}</h1>
           <p className="page-subtitle">
-            {task?.scheme || '专业版 · 精准识别'} · 目标：{task?.sub_scheme || '水印 · 字幕'} · 处理耗时{' '}
-            {res.elapsed_label || '已完成'} · 原音频已保留
+            {task?.scheme || '专业版 · 精准识别'} · 目标：{task?.sub_scheme || '水印 · 字幕'} · 处理时长{' '}
+            {task?.processing_duration && task.processing_duration !== '—'
+              ? task.processing_duration
+              : res.elapsed_label || '已完成'}{' '}
+            · 原音频已保留
           </p>
         </div>
         <div className="head-right">
@@ -210,6 +213,14 @@ export function CompareView({ taskId, onNavigate, onToast }: Props) {
           <span className="stat-value">
             {(task?.output_resolution || '1920x1080').replace('x', '×')} · {(task?.output_fps || 29.97).toFixed(2)}fps ·{' '}
             {res.codec || 'h264'}
+          </span>
+        </div>
+        <div className="stat-item">
+          <span className="stat-label">处理时长</span>
+          <span className="stat-value">
+            {task?.processing_duration && task.processing_duration !== '—'
+              ? task.processing_duration
+              : res.elapsed_label || '—'}
           </span>
         </div>
         <div className="stat-item">

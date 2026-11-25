@@ -426,14 +426,26 @@ class VolcengineLasClient:
 SOURCE_LANG_NAME_MAP = {item["code"]: item["name"] for item in SOURCE_LANGUAGES}
 
 
+def format_elapsed_seconds(seconds: int | float | None, *, compact: bool = False) -> str:
+    if seconds is None:
+        return "—"
+    sec = max(0, int(round(seconds)))
+    if sec < 60:
+        return f"{sec}秒" if compact else f"{sec} 秒"
+    h, rem = divmod(sec, 3600)
+    m, s = divmod(rem, 60)
+    if h > 0:
+        return f"{h}小时{m:02d}分{s:02d}秒" if compact else f"{h} 小时 {m:02d} 分 {s:02d} 秒"
+    return f"{m}分{s:02d}秒" if compact else f"{m} 分 {s:02d} 秒"
+
+
 def _format_elapsed(started_at: datetime | None, finished_at: datetime | None) -> str:
     if not started_at or not finished_at:
         return "已完成"
     s = started_at if started_at.tzinfo else started_at.replace(tzinfo=timezone.utc)
     f = finished_at if finished_at.tzinfo else finished_at.replace(tzinfo=timezone.utc)
     sec = max(1, int(round((f - s).total_seconds())))
-    m, r = divmod(sec, 60)
-    return f"{m} 分 {r:02d} 秒" if m > 0 else f"{r} 秒"
+    return format_elapsed_seconds(sec, compact=False)
 
 
 def parse_srt_entries(srt_text: str, max_items: int = 10) -> list[dict[str, str]]:

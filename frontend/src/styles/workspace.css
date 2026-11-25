@@ -853,9 +853,9 @@ button {
 .task-table-head,
 .task-row {
   display: grid;
-  grid-template-columns: minmax(260px, 1.8fr) minmax(170px, 1fr) 110px 156px 96px 86px 28px;
+  grid-template-columns: minmax(220px, 1.8fr) minmax(148px, 1fr) 96px 136px 104px 82px 72px 28px;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   padding: 0 14px 0 18px;
 }
 
@@ -966,7 +966,7 @@ button {
 }
 
 .progress-cell .progress-track {
-  width: 92px;
+  width: 84px;
   flex-shrink: 0;
 }
 
@@ -981,6 +981,40 @@ button {
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--text-subtle);
+}
+
+.task-duration-cell,
+.queue-duration-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.task-duration-cell.is-running,
+.queue-duration-cell.is-running {
+  color: var(--blue-text);
+}
+
+.task-duration-cell.is-empty,
+.queue-duration-cell.is-empty {
+  color: var(--text-dim);
+}
+
+.duration-live-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--blue);
+  box-shadow: 0 0 6px var(--blue);
+  flex-shrink: 0;
+  animation: durationPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes durationPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.85); }
 }
 
 .cell-time {
@@ -2613,9 +2647,9 @@ button {
 .queue-head,
 .queue-row {
   display: grid;
-  grid-template-columns: minmax(200px, 1.6fr) 108px 180px 92px;
+  grid-template-columns: minmax(180px, 1.5fr) 96px 156px 96px 80px;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   padding: 0 14px 0 16px;
 }
 
@@ -2639,7 +2673,7 @@ button {
 .queue-row.clickable:hover { background: rgba(255, 255, 255, 0.025); }
 
 .queue-row .progress-track {
-  width: 112px;
+  width: 96px;
 }
 
 /* Console Log Panel */
@@ -2896,7 +2930,7 @@ button {
   background: var(--bg-panel);
   border: 1px solid var(--border-default);
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: minmax(160px, 1.1fr) minmax(96px, 0.75fr) minmax(126px, 0.9fr) minmax(136px, 1fr) minmax(160px, 1.2fr) minmax(84px, 0.65fr);
   gap: 16px;
 }
 
@@ -3423,8 +3457,11 @@ button {
 @media (max-width: 1240px) {
   .task-table-head,
   .task-row {
-    grid-template-columns: minmax(200px, 1.5fr) minmax(140px, 1fr) 96px 136px 84px 72px 24px;
+    grid-template-columns: minmax(180px, 1.5fr) minmax(124px, 1fr) 88px 120px 92px 74px 62px 24px;
     gap: 10px;
+  }
+  .progress-cell .progress-track {
+    width: 72px;
   }
   .col-config { width: 344px; }
   .col-side { width: 310px; }

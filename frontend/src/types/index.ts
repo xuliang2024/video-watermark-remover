@@ -177,6 +177,10 @@ export interface TaskRow {
   cost_cny: number;
   eta: string;
   time: string;
+  elapsed_seconds?: number | null;
+  processing_duration?: string;
+  started_at?: string | null;
+  finished_at?: string | null;
   error_msg: string;
   remote_task_id?: string | null;
   execution_mode: string;
