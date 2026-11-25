@@ -148,3 +148,36 @@ export function formatTaskDurationTooltip(task: TaskRow, durationText: string): 
   }
   return durationText !== '—' ? `处理时长 ${durationText}` : '暂无处理时长记录';
 }
+
+export function formatProcessedMetric(raw?: string | null): string {
+  if (!raw) return '0 分';
+  const trimmed = raw.trim();
+  const hmMatch = trimmed.match(/^(\d+)h\s*(\d+)m$/i);
+  if (hmMatch) {
+    const h = Number(hmMatch[1]);
+    const m = Number(hmMatch[2]);
+    return m > 0 ? `${h} 时 ${m} 分` : `${h} 小时`;
+  }
+  const mMatch = trimmed.match(/^(\d+(?:\.\d+)?)m$/i);
+  if (mMatch) {
+    return `${mMatch[1]} 分`;
+  }
+  return trimmed;
+}
+
+export function formatPercentClean(raw?: string | null): string {
+  if (!raw) return '100%';
+  const trimmed = raw.trim();
+  const match = trimmed.match(/^(\d+)\.0%$/);
+  return match ? `${match[1]}%` : trimmed;
+}
+
+export function cleanOverviewSubtitle(raw?: string | null): string {
+  if (!raw) return '正在同步实时任务队列';
+  const parts = raw
+    .split('·')
+    .map((s) => s.trim())
+    .filter((s) => s && !s.startsWith('可用余额'));
+  return parts.join(' · ') || raw;
+}
+

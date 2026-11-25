@@ -1,85 +1,85 @@
 :root {
-  /* Surfaces */
-  --bg-sidebar: #0A0C10;
-  --bg-canvas: #0E1116;
-  --bg-panel: #12161A;
-  --bg-panel-subtle: #0F1318;
-  --bg-panel-info: #0F1418;
-  --bg-console: #0B0E12;
-  --bg-track-deep: #0C0F14;
-  --bg-toolbar: #0C1014;
-  --bg-surface-2: #151A20;
-  --bg-surface-3: #161B21;
-  --bg-surface-4: #171C22;
-  --bg-surface-active: #1E2833;
-  --bg-surface-hover: #1A2129;
-  --bg-segmented: #0E1216;
-  --bg-segmented-active: #2A323C;
-  --bg-selected-tile: #1B2530;
-  --bg-repaired: #101822;
-  --bg-repaired-btn: #16202B;
-  --bg-count-chip: #1E252E;
-  --bg-progress-track: #242C36;
+  /* Graphite Neutral Surfaces */
+  --bg-sidebar: #0D0E10;
+  --bg-canvas: #111214;
+  --bg-panel: #16171A;
+  --bg-panel-subtle: #131417;
+  --bg-panel-info: #141518;
+  --bg-console: #0E0F12;
+  --bg-track-deep: #0F1013;
+  --bg-toolbar: #121316;
+  --bg-surface-2: #1B1C20;
+  --bg-surface-3: #1E1F24;
+  --bg-surface-4: #202227;
+  --bg-surface-active: #272930;
+  --bg-surface-hover: #23252B;
+  --bg-segmented: #121316;
+  --bg-segmented-active: #26282E;
+  --bg-selected-tile: #22242A;
+  --bg-repaired: #15171C;
+  --bg-repaired-btn: #1D2028;
+  --bg-count-chip: rgba(255, 255, 255, 0.06);
+  --bg-progress-track: rgba(255, 255, 255, 0.08);
 
-  /* Borders */
-  --border-subtle: #1A2027;
-  --border-default: #1C2229;
-  --border-mid: #1E242C;
-  --border-strong: #232B34;
-  --border-input: #212933;
-  --border-dashed: #3D4A59;
-  --border-repaired: #1F2B3B;
+  /* Quiet Hairline Borders */
+  --border-subtle: rgba(255, 255, 255, 0.055);
+  --border-default: rgba(255, 255, 255, 0.085);
+  --border-mid: rgba(255, 255, 255, 0.095);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --border-input: rgba(255, 255, 255, 0.11);
+  --border-dashed: rgba(255, 255, 255, 0.18);
+  --border-repaired: rgba(255, 255, 255, 0.1);
 
-  /* Brand & Accents */
-  --accent: #4CE0A5;
-  --accent-hover: #5CE8B0;
-  --accent-text: #7FEBC4;
-  --accent-on: #06231A;
-  --accent-bg: rgba(76, 224, 165, 0.13);
-  --accent-bg-soft: rgba(76, 224, 165, 0.08);
-  --accent-bg-pill: rgba(76, 224, 165, 0.09);
-  --accent-tonal: #16342A;
-  --accent-tonal-chip: #17332A;
-  --accent-border: rgba(76, 224, 165, 0.28);
-  --accent-sub-text: #6E8B80;
+  /* Single Brand Accent (Restrained Mint) */
+  --accent: #42D392;
+  --accent-hover: #52DF9F;
+  --accent-text: #6EE7B0;
+  --accent-on: #062015;
+  --accent-bg: rgba(66, 211, 146, 0.12);
+  --accent-bg-soft: rgba(66, 211, 146, 0.08);
+  --accent-bg-pill: rgba(255, 255, 255, 0.06);
+  --accent-tonal: rgba(66, 211, 146, 0.1);
+  --accent-tonal-chip: rgba(66, 211, 146, 0.12);
+  --accent-border: rgba(66, 211, 146, 0.3);
+  --accent-sub-text: #86C5A7;
 
-  /* Semantic Status */
+  /* Semantic Status (Toned for Dark Graphite) */
   --blue: #5B9BFF;
-  --blue-text: #7FB4FF;
-  --blue-bg: rgba(91, 155, 255, 0.13);
-  --blue-border: rgba(91, 155, 255, 0.35);
+  --blue-text: #85B7FF;
+  --blue-bg: rgba(91, 155, 255, 0.12);
+  --blue-border: rgba(91, 155, 255, 0.3);
 
-  --red: #F0605F;
-  --red-text: #FF8A89;
-  --red-muted-text: #E08A89;
-  --red-bg: rgba(240, 96, 95, 0.14);
-  --red-btn-bg: #21161A;
-  --red-border: rgba(240, 96, 95, 0.28);
+  --red: #E5484D;
+  --red-text: #F28B82;
+  --red-muted-text: #E58C8A;
+  --red-bg: rgba(229, 72, 77, 0.12);
+  --red-btn-bg: rgba(229, 72, 77, 0.1);
+  --red-border: rgba(229, 72, 77, 0.28);
 
-  --amber: #E8B04B;
-  --amber-text: #C79B4C;
-  --amber-bg: rgba(232, 176, 75, 0.08);
+  --amber: #E5A83B;
+  --amber-text: #DFAA4B;
+  --amber-bg: rgba(229, 168, 59, 0.1);
   --amber-on: #241A05;
 
   --neutral-pill-bg: rgba(255, 255, 255, 0.06);
-  --plan-bg: #1A1F16;
-  --plan-border: #3B4A2A;
-  --plan-text: #9FD46B;
+  --plan-bg: rgba(255, 255, 255, 0.05);
+  --plan-border: rgba(255, 255, 255, 0.1);
+  --plan-text: #A1A1AA;
 
-  /* Typography Colors */
-  --text-primary: #EEF1F4;
-  --text-high: #E4E9EE;
-  --text-secondary: #C2CBD4;
-  --text-button: #B6BFCA;
-  --text-body: #A4AEB9;
-  --text-nav: #9AA3AE;
-  --text-label: #93A0AD;
-  --text-muted: #7A8593;
-  --text-subtle: #6E7885;
-  --text-dim: #5E6873;
-  --text-hint: #5A636E;
-  --text-faint: #4E5762;
-  --text-ghost: #454E59;
+  /* 3-Role Neutral Typography Ramp */
+  --text-primary: #EDEDEF;
+  --text-high: #E4E4E7;
+  --text-secondary: #A1A1AA;
+  --text-button: #D4D4D8;
+  --text-body: #A1A1AA;
+  --text-nav: #A1A1AA;
+  --text-label: #A1A1AA;
+  --text-muted: #71717A;
+  --text-subtle: #71717A;
+  --text-dim: #71717A;
+  --text-hint: #63636B;
+  --text-faint: #52525B;
+  --text-ghost: #52525B;
 
   /* Font Families */
   --font-sans: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
@@ -88,21 +88,21 @@
   --font-jp: 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', sans-serif;
   --font-kr: 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
 
-  /* Layout Dimensions */
-  --sidebar-w: 224px;
-  --topbar-h: 64px;
-  --config-panel-w: 372px;
-  --side-panel-w: 340px;
+  /* 4px-Aligned Layout Dimensions */
+  --sidebar-w: 240px;
+  --topbar-h: 60px;
+  --config-panel-w: 368px;
+  --side-panel-w: 336px;
 
-  /* Radii */
+  /* Nested Radius Scale */
   --r-xs: 4px;
   --r-sm: 6px;
   --r-md: 8px;
-  --r-btn: 9px;
+  --r-btn: 8px;
   --r-lg: 10px;
   --r-card: 12px;
-  --r-panel: 14px;
+  --r-panel: 12px;
 
-  /* Transitions */
-  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* Single Motion Curve */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
 }

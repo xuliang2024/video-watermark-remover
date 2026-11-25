@@ -184,6 +184,7 @@ export function WorkspacePage({ initialView, onGoHome, onViewChange }: Props) {
   const usageMin = Math.round(billing?.total_minutes ?? 1284);
   const quotaMin = Math.round(billing?.monthly_quota_minutes ?? 3000);
   const quotaPct = billing?.quota_percent ?? 42.8;
+  const credsReady = Boolean(systemConfig?.has_las_api_key && systemConfig?.has_tos_credentials);
 
   return (
     <div className="workspace-root">
@@ -191,46 +192,43 @@ export function WorkspacePage({ initialView, onGoHome, onViewChange }: Props) {
         <aside className="sidebar">
           <div className="brand" title="返回任务总览" onClick={() => navigate('overview')}>
             <div className="brand-mark">
-              <BrandLogo size={26} />
+              <BrandLogo size={24} />
             </div>
-            <div className="brand-text">
-              <span className="brand-name">净影</span>
-              <span className="brand-sub">CLEANFRAME</span>
-            </div>
+            <span className="brand-name">净影</span>
           </div>
 
           <nav className="sidebar-nav" aria-label="主导航">
             <div className="nav-group-label">工作区</div>
             <button className={`nav-item ${activeNav === 'overview' ? 'active' : ''}`} onClick={() => navigate('overview')}>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <rect x="1.6" y="1.6" width="5" height="5" rx="1.6" stroke="currentColor" strokeWidth="1.4" />
-                <rect x="9.4" y="1.6" width="5" height="5" rx="1.6" stroke="currentColor" strokeWidth="1.4" />
-                <rect x="1.6" y="9.4" width="5" height="5" rx="1.6" stroke="currentColor" strokeWidth="1.4" />
-                <rect x="9.4" y="9.4" width="5" height="5" rx="1.6" stroke="currentColor" strokeWidth="1.4" />
+                <rect x="2" y="2" width="5" height="5" rx="1.4" stroke="currentColor" strokeWidth="1.4" />
+                <rect x="9" y="2" width="5" height="5" rx="1.4" stroke="currentColor" strokeWidth="1.4" />
+                <rect x="2" y="9" width="5" height="5" rx="1.4" stroke="currentColor" strokeWidth="1.4" />
+                <rect x="9" y="9" width="5" height="5" rx="1.4" stroke="currentColor" strokeWidth="1.4" />
               </svg>
               <span>任务总览</span>
             </button>
             <button className={`nav-item ${activeNav === 'inpaint' ? 'active' : ''}`} onClick={() => navigate('inpaint')}>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <rect x="1.6" y="1.6" width="12.8" height="12.8" rx="4" stroke="currentColor" strokeWidth="1.4" />
-                <path d="M8 5.1v5.8M5.1 8h5.8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                <rect x="2" y="2" width="12" height="12" rx="3.2" stroke="currentColor" strokeWidth="1.4" />
+                <path d="M8 5.2v5.6M5.2 8h5.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
               </svg>
-              <span>新建修复任务</span>
+              <span>去水印修复</span>
             </button>
             <button className={`nav-item ${activeNav === 'translate' ? 'active' : ''}`} onClick={() => navigate('translate')}>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <circle cx="8" cy="8" r="6.3" stroke="currentColor" strokeWidth="1.35" />
-                <path d="M1.7 8h12.6" stroke="currentColor" strokeWidth="1.2" />
-                <ellipse cx="8" cy="8" rx="3" ry="6.3" stroke="currentColor" strokeWidth="1.2" />
+                <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.4" />
+                <path d="M2 8h12" stroke="currentColor" strokeWidth="1.3" />
+                <ellipse cx="8" cy="8" rx="2.8" ry="6" stroke="currentColor" strokeWidth="1.3" />
               </svg>
-              <span>新建翻译任务</span>
+              <span>多语翻译</span>
             </button>
 
             <div className="nav-group-label">资源</div>
             <button className={`nav-item ${activeNav === 'annotate' ? 'active' : ''}`} onClick={() => navigate('annotate')}>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M4.2 1.6v10.2h10.2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-                <path d="M11.8 14.4V4.2H1.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                <path d="M4.2 2v9.8H14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                <path d="M11.8 14V4.2H2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
               </svg>
               <span>区域模板</span>
             </button>
@@ -239,8 +237,8 @@ export function WorkspacePage({ initialView, onGoHome, onViewChange }: Props) {
               onClick={() => navigate('subtitle-style')}
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <rect x="1.5" y="4.2" width="13" height="7.6" rx="2" stroke="currentColor" strokeWidth="1.35" />
-                <path d="M4.4 9.4h3.6M9.4 9.4h2.4" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
+                <rect x="1.8" y="4.2" width="12.4" height="7.6" rx="2" stroke="currentColor" strokeWidth="1.4" />
+                <path d="M4.6 9.4h3.4M9.4 9.4h2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
               </svg>
               <span>字幕样式</span>
             </button>
@@ -249,23 +247,21 @@ export function WorkspacePage({ initialView, onGoHome, onViewChange }: Props) {
             <button className={`nav-item ${activeNav === 'billing' ? 'active' : ''}`} onClick={() => navigate('billing')}>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <path d="M2.2 13.8h11.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-                <rect x="2.8" y="7.6" width="2.8" height="4.4" rx="1.1" stroke="currentColor" strokeWidth="1.3" />
-                <rect x="6.6" y="3.4" width="2.8" height="8.6" rx="1.1" stroke="currentColor" strokeWidth="1.3" />
-                <rect x="10.4" y="6" width="2.8" height="6" rx="1.1" stroke="currentColor" strokeWidth="1.3" />
+                <rect x="2.8" y="7.6" width="2.8" height="4.4" rx="1" stroke="currentColor" strokeWidth="1.35" />
+                <rect x="6.6" y="3.4" width="2.8" height="8.6" rx="1" stroke="currentColor" strokeWidth="1.35" />
+                <rect x="10.4" y="6" width="2.8" height="6" rx="1" stroke="currentColor" strokeWidth="1.35" />
               </svg>
               <span>用量账单</span>
             </button>
             <button className={`nav-item ${activeNav === 'settings' ? 'active' : ''}`} onClick={() => navigate('settings')}>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M2.2 4.2h4.2M9.6 4.2h4.2M2.2 8h7.2M12.4 8h1.4M2.2 11.8h2.4M7.6 11.8h6.2" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" />
-                <circle cx="8" cy="4.2" r="1.5" stroke="currentColor" strokeWidth="1.3" />
-                <circle cx="10.9" cy="8" r="1.5" stroke="currentColor" strokeWidth="1.3" />
-                <circle cx="6.1" cy="11.8" r="1.5" stroke="currentColor" strokeWidth="1.3" />
+                <path d="M2.2 4.2h4.2M9.6 4.2h4.2M2.2 8h7.2M12.4 8h1.4M2.2 11.8h2.4M7.6 11.8h6.2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                <circle cx="8" cy="4.2" r="1.5" stroke="currentColor" strokeWidth="1.35" />
+                <circle cx="10.9" cy="8" r="1.5" stroke="currentColor" strokeWidth="1.35" />
+                <circle cx="6.1" cy="11.8" r="1.5" stroke="currentColor" strokeWidth="1.35" />
               </svg>
               <span style={{ flex: 1 }}>系统设置</span>
-              {systemConfig && (!systemConfig.has_las_api_key || !systemConfig.has_tos_credentials) && (
-                <span className="nav-setup-badge">待配置</span>
-              )}
+              {systemConfig && !credsReady && <span className="nav-setup-badge">待配置</span>}
             </button>
           </nav>
 
@@ -273,24 +269,21 @@ export function WorkspacePage({ initialView, onGoHome, onViewChange }: Props) {
             <div className="usage-card" title="查看用量明细" onClick={() => navigate('billing')}>
               <div className="usage-row">
                 <span className="usage-label">本月用量</span>
-                <span className="usage-value">
-                  {usageMin.toLocaleString()} / {quotaMin.toLocaleString()}
+                <span className="usage-value mono">
+                  {usageMin.toLocaleString()} / {quotaMin.toLocaleString()} 分
                 </span>
               </div>
               <div className="progress-track">
-                <div className="progress-fill" style={{ width: `${quotaPct}%` }}></div>
+                <div className="progress-fill" style={{ width: `${Math.min(100, quotaPct)}%` }}></div>
               </div>
             </div>
 
             <div className="user-row">
-              <div className="avatar"></div>
+              <div className="avatar">林</div>
               <div className="user-text">
                 <span className="user-name">林舟</span>
-                <span className="user-role">生产环境 · 运维</span>
+                <span className="user-role">生产环境 · 自部署</span>
               </div>
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path d="M4.4 5.6L7 3l2.6 2.6M4.4 8.4L7 11l2.6-2.6" stroke="#5A636E" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
             </div>
           </div>
         </aside>
@@ -298,45 +291,29 @@ export function WorkspacePage({ initialView, onGoHome, onViewChange }: Props) {
         <div className="main-area">
           <header className="topbar">
             <div className="topbar-left">
-              <button className="home-back-link" title="返回产品官网首页" onClick={onGoHome}>
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <path d="M7.6 2.6L4.2 6l3.4 3.4" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                <span>官网首页</span>
-              </button>
               <button
-                className="env-chip"
+                className="env-status-link"
                 title="点击前往「系统设置」管理线上凭证"
                 onClick={() => navigate('settings')}
               >
-                <span
-                  className="live-dot"
-                  style={{
-                    background:
-                      systemConfig?.has_las_api_key && systemConfig?.has_tos_credentials ? '#4CE0A5' : '#E8B04B',
-                  }}
-                ></span>
+                <span className={`live-dot${credsReady ? '' : ' is-warn'}`} />
                 <span>
-                  {systemConfig?.has_las_api_key && systemConfig?.has_tos_credentials
-                    ? `火山 LAS · ${systemConfig.las_region}`
-                    : `火山 LAS · 待配置凭证`}
+                  {credsReady
+                    ? `算力在线 · ${systemConfig?.las_region || 'cn-beijing'}`
+                    : '火山 LAS · 待配置凭证'}
                 </span>
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <path d="M3.2 4.8L6 7.6l2.8-2.8" stroke="#5E6873" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
               </button>
-              <span className="plan-chip">企业版</span>
             </div>
 
             <div className="topbar-right">
               <div className="search-box">
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                  <circle cx="5.6" cy="5.6" r="4" stroke="#5A636E" strokeWidth="1.3" />
-                  <path d="M8.6 8.6l2.6 2.6" stroke="#5A636E" strokeWidth="1.3" strokeLinecap="round" />
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <circle cx="6.2" cy="6.2" r="4.4" stroke="currentColor" strokeWidth="1.4" />
+                  <path d="M9.5 9.5l2.7 2.7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
                 </svg>
                 <input
                   type="text"
-                  placeholder="搜索任务 ID / 文件名"
+                  placeholder="搜索任务或文件名"
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
@@ -344,22 +321,18 @@ export function WorkspacePage({ initialView, onGoHome, onViewChange }: Props) {
                   }}
                   autoComplete="off"
                 />
+                <button
+                  type="button"
+                  className="search-kbd"
+                  title="快速切换页面 (⌘K)"
+                  onClick={() => setCmdOpen(true)}
+                >
+                  ⌘K
+                </button>
               </div>
-              <button className="shortcut-btn" title="快速切换页面 (⌘K)" onClick={() => setCmdOpen(true)}>
-                ⌘K
+              <button className="topbar-text-link" title="返回产品官网首页" onClick={onGoHome}>
+                官网
               </button>
-              <span className="topbar-divider"></span>
-              <button
-                className="icon-btn"
-                title="任务通知"
-                onClick={() => showToast('后台调度器运行正常（10 并发 · 600 RPM）')}
-              >
-                <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
-                  <path d="M4.2 7.1a4.3 4.3 0 018.6 0v2.6l1.1 2.2H3.1l1.1-2.2V7.1z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-                  <path d="M6.9 13.6a1.8 1.8 0 003.2 0" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-                </svg>
-              </button>
-              <div className="avatar sm"></div>
             </div>
           </header>
 
