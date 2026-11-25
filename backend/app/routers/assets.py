@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 from typing import Literal
 
@@ -19,6 +20,7 @@ from ..services.media import (
     sanitize_filename,
 )
 from ..services.tos_client import tos_service
+from ..services.upload_progress import upload_progress_tracker
 
 router = APIRouter(prefix="/api/assets", tags=["assets"])
 
@@ -57,10 +59,16 @@ def list_assets(
     return {"items": [serialize_asset(a) for a in rows]}
 
 
+@router.get("/upload-progress/{upload_id}")
+def get_upload_progress(upload_id: str):
+    return upload_progress_tracker.get(upload_id)
+
+
 @router.post("/upload")
 async def upload_assets(
     files: list[UploadFile] = File(...),
     purpose: Literal["inpaint", "translate"] = Query(default="inpaint"),
+    upload_id: str | None = Query(default=None, max_length=80),
     db: Session = Depends(get_db),
 ):
     if not files:
@@ -70,55 +78,120 @@ async def upload_assets(
 
     settings = get_settings()
     created: list[MediaAsset] = []
+    if upload_id:
+        first_name = sanitize_filename(files[0].filename or "video.mp4")
+        upload_progress_tracker.init(upload_id, filename=first_name)
 
-    for upload in files:
-        orig_name = sanitize_filename(upload.filename or "video.mp4")
-        ext = Path(orig_name).suffix.lower() or ".mp4"
-        if ext not in ALLOWED_EXTENSIONS:
-            raise HTTPException(
-                status_code=400,
-                detail=f"文件 {orig_name} 格式不支持，仅支持 {', '.join(sorted(ALLOWED_EXTENSIONS))}",
+    try:
+        for upload in files:
+            orig_name = sanitize_filename(upload.filename or "video.mp4")
+            ext = Path(orig_name).suffix.lower() or ".mp4"
+            if ext not in ALLOWED_EXTENSIONS:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"文件 {orig_name} 格式不支持，仅支持 {', '.join(sorted(ALLOWED_EXTENSIONS))}",
+                )
+
+            asset_id = new_id("inf" if purpose == "inpaint" else "trf")
+            disk_name = f"{asset_id}_{orig_name}"
+            disk_path = settings.uploads_path / disk_name
+
+            max_bytes = 10 * 1024**3
+            chunk_size = 1024 * 1024  # 1 MiB streaming chunks to avoid loading large videos into RAM
+            size_bytes = 0
+            if upload_id:
+                upload_progress_tracker.update(upload_id, filename=orig_name, stage="receiving", received_bytes=0)
+
+            try:
+                with disk_path.open("wb") as out_f:
+                    while True:
+                        chunk = await upload.read(chunk_size)
+                        if not chunk:
+                            break
+                        size_bytes += len(chunk)
+                        if size_bytes > max_bytes:
+                            raise HTTPException(status_code=400, detail=f"文件 {orig_name} 超过 10 GB 上限")
+                        out_f.write(chunk)
+                        if upload_id:
+                            upload_progress_tracker.update(upload_id, received_bytes=size_bytes)
+                if size_bytes == 0:
+                    raise HTTPException(status_code=400, detail=f"文件 {orig_name} 为空文件")
+            except Exception:
+                if disk_path.exists():
+                    disk_path.unlink(missing_ok=True)
+                raise
+            finally:
+                await upload.close()
+
+            if upload_id:
+                upload_progress_tracker.update(
+                    upload_id,
+                    stage="probing",
+                    received_bytes=size_bytes,
+                    total_bytes=size_bytes,
+                )
+
+            meta = await asyncio.to_thread(probe_video_metadata, disk_path, size_bytes)
+            thumb_url = await asyncio.to_thread(extract_thumbnail, disk_path, asset_id)
+
+            def _on_tos_progress(consumed: int, total: int) -> None:
+                if upload_id:
+                    upload_progress_tracker.update(
+                        upload_id,
+                        stage="cloud_sync",
+                        tos_consumed_bytes=consumed,
+                        tos_total_bytes=total or size_bytes,
+                    )
+
+            if upload_id and tos_service.is_configured():
+                upload_progress_tracker.update(
+                    upload_id,
+                    stage="cloud_sync",
+                    tos_consumed_bytes=0,
+                    tos_total_bytes=size_bytes,
+                )
+
+            tos_uri, video_url = await asyncio.to_thread(
+                tos_service.upload_input_video,
+                disk_path,
+                asset_id,
+                orig_name,
+                _on_tos_progress if upload_id else None,
             )
 
-        asset_id = new_id("inf" if purpose == "inpaint" else "trf")
-        disk_name = f"{asset_id}_{orig_name}"
-        disk_path = settings.uploads_path / disk_name
+            asset = MediaAsset(
+                id=asset_id,
+                filename=orig_name,
+                purpose=purpose,
+                local_path=str(disk_path),
+                tos_uri=tos_uri,
+                video_url=video_url,
+                thumbnail_url=thumb_url,
+                width=meta["width"],
+                height=meta["height"],
+                fps=meta["fps"],
+                duration_sec=meta["duration_sec"],
+                frames=meta["frames"],
+                size_bytes=size_bytes,
+                detected_lang="中文（简体）",
+                detected_lang_code="zh-CN",
+                is_sample=False,
+            )
+            db.add(asset)
+            created.append(asset)
 
-        content = await upload.read()
-        size_bytes = len(content)
-        if size_bytes == 0:
-            raise HTTPException(status_code=400, detail=f"文件 {orig_name} 为空文件")
-        if size_bytes > 10 * 1024**3:
-            raise HTTPException(status_code=400, detail=f"文件 {orig_name} 超过 10 GB 上限")
-
-        disk_path.write_bytes(content)
-        meta = probe_video_metadata(disk_path, size_bytes)
-        thumb_url = extract_thumbnail(disk_path, asset_id)
-        tos_uri, video_url = tos_service.upload_input_video(disk_path, asset_id, orig_name)
-
-        asset = MediaAsset(
-            id=asset_id,
-            filename=orig_name,
-            purpose=purpose,
-            local_path=str(disk_path),
-            tos_uri=tos_uri,
-            video_url=video_url,
-            thumbnail_url=thumb_url,
-            width=meta["width"],
-            height=meta["height"],
-            fps=meta["fps"],
-            duration_sec=meta["duration_sec"],
-            frames=meta["frames"],
-            size_bytes=size_bytes,
-            detected_lang="中文（简体）",
-            detected_lang_code="zh-CN",
-            is_sample=False,
-        )
-        db.add(asset)
-        created.append(asset)
-
-    db.commit()
-    return {"items": [serialize_asset(a) for a in created]}
+        db.commit()
+        if upload_id:
+            upload_progress_tracker.update(upload_id, stage="done")
+        return {"items": [serialize_asset(a) for a in created]}
+    except HTTPException as exc:
+        if upload_id:
+            upload_progress_tracker.update(upload_id, stage="error", error=str(exc.detail))
+        raise
+    except Exception as exc:
+        if upload_id:
+            upload_progress_tracker.update(upload_id, stage="error", error=str(exc))
+        raise
 
 
 @router.delete("/{asset_id}")

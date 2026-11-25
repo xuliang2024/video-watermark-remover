@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 from urllib.parse import quote
 
 from ..config import get_runtime_config
@@ -49,7 +49,19 @@ class TosStorageService:
             logger.warning("Unable to initialize TOS client: %s", exc)
             return None, None
 
-    def upload_input_video(self, local_path: Path, asset_id: str, filename: str) -> tuple[str | None, str]:
+    def is_configured(self, draft_overrides: dict[str, Any] | None = None) -> bool:
+        if os.getenv("PYTEST_CURRENT_TEST") and not draft_overrides:
+            return False
+        cfg = get_runtime_config(draft_overrides)
+        return bool(cfg["volc_access_key_id"] and cfg["volc_access_key_secret"] and cfg["tos_bucket"])
+
+    def upload_input_video(
+        self,
+        local_path: Path,
+        asset_id: str,
+        filename: str,
+        on_progress: Callable[[int, int], None] | None = None,
+    ) -> tuple[str | None, str]:
         """
         Returns (tos_uri, accessible_video_url).
         In local/mock mode without TOS bucket, returns (None, local_media_url).
@@ -62,8 +74,25 @@ class TosStorageService:
 
         prefix = cfg["tos_input_prefix"].strip("/")
         object_key = f"{prefix}/{asset_id}/{filename}"
+        file_size = local_path.stat().st_size if local_path.exists() else 0
+
+        def _listener(consumed_bytes: int, total_bytes: int, _rw_once: int, _transfer_type: Any) -> None:
+            if not on_progress:
+                return
+            try:
+                effective_total = int(total_bytes) if total_bytes and total_bytes > 0 else file_size
+                on_progress(max(0, int(consumed_bytes or 0)), max(0, effective_total))
+            except Exception:
+                pass
+
         try:
-            client.put_object_from_file(bucket, object_key, str(local_path))
+            kwargs: dict[str, Any] = {}
+            if on_progress:
+                on_progress(0, file_size)
+                kwargs["data_transfer_listener"] = _listener
+            client.put_object_from_file(bucket, object_key, str(local_path), **kwargs)
+            if on_progress and file_size > 0:
+                on_progress(file_size, file_size)
             tos_uri = f"tos://{bucket}/{object_key}"
             return tos_uri, tos_uri
         except Exception as exc:

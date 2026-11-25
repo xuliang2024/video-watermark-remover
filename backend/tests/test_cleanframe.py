@@ -508,3 +508,55 @@ def test_system_env_settings_persistence_and_first_run_onboarding(client: TestCl
     assert dismissed["is_first_run"] is False
     assert dismissed["setup_completed"] is True
 
+
+def test_upload_progress_tracking_and_tos_callback(client: TestClient):
+    uid = "up-test-progress-001"
+    # Before upload exists, endpoint returns non-error receiving placeholder
+    before = client.get(f"/api/assets/upload-progress/{uid}")
+    assert before.status_code == 200
+    assert before.json()["found"] is False
+    assert before.json()["stage"] == "receiving"
+
+    # Simulate TOS cloud sync invoking on_progress callback during upload
+    def _fake_tos_upload(local_path, asset_id, filename, on_progress=None):
+        size = local_path.stat().st_size
+        if on_progress:
+            on_progress(size // 2, size)
+            on_progress(size, size)
+        return f"tos://mock-bucket/inputs/{asset_id}/{filename}", f"tos://mock-bucket/inputs/{asset_id}/{filename}"
+
+    mp4_path = _generate_real_mp4(_TMP_DIR / "progress_sample.mp4")
+    with patch("app.routers.assets.tos_service.is_configured", return_value=True), patch(
+        "app.routers.assets.tos_service.upload_input_video", side_effect=_fake_tos_upload
+    ):
+        with mp4_path.open("rb") as fh:
+            resp = client.post(
+                f"/api/assets/upload?purpose=inpaint&upload_id={uid}",
+                files=[("files", ("progress_sample.mp4", fh, "video/mp4"))],
+            )
+    assert resp.status_code == 200, resp.text
+    asset = resp.json()["items"][0]
+    assert asset["name"] == "progress_sample.mp4"
+
+    after = client.get(f"/api/assets/upload-progress/{uid}")
+    assert after.status_code == 200
+    prog = after.json()
+    assert prog["found"] is True
+    assert prog["stage"] == "done"
+    assert prog["received_bytes"] == mp4_path.stat().st_size
+    assert prog["tos_percent"] == 100
+    assert prog["tos_consumed_bytes"] == mp4_path.stat().st_size
+
+    # Unsupported extension records error state cleanly
+    bad_uid = "up-test-progress-bad"
+    bad_resp = client.post(
+        f"/api/assets/upload?purpose=inpaint&upload_id={bad_uid}",
+        files=[("files", ("readme.txt", io.BytesIO(b"hello"), "text/plain"))],
+    )
+    assert bad_resp.status_code == 400
+    bad_prog = client.get(f"/api/assets/upload-progress/{bad_uid}").json()
+    assert bad_prog["found"] is True
+    assert bad_prog["stage"] == "error"
+    assert bad_prog["error"]
+
+

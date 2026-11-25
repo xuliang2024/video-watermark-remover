@@ -15,6 +15,35 @@ import type {
   TranslateConfig,
 } from '../types';
 
+export class UploadCancelledError extends Error {
+  constructor(message = '已取消上传') {
+    super(message);
+    this.name = 'UploadCancelledError';
+  }
+}
+
+export interface UploadProgressEvent {
+  loaded: number;
+  total: number;
+  percent: number;
+  speedBps: number;
+  etaSec: number | null;
+}
+
+export interface ServerUploadProgress {
+  upload_id: string;
+  found: boolean;
+  filename: string;
+  stage: 'receiving' | 'probing' | 'cloud_sync' | 'done' | 'error';
+  stage_label: string;
+  received_bytes: number;
+  total_bytes: number;
+  tos_consumed_bytes: number;
+  tos_total_bytes: number;
+  tos_percent: number;
+  error: string | null;
+}
+
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, {
     headers: {
@@ -81,6 +110,115 @@ export const api = {
     return request<{ items: MediaAsset[] }>(`/api/assets/upload?purpose=${purpose}`, {
       method: 'POST',
       body: fd,
+    });
+  },
+
+  getUploadProgress: (uploadId: string) =>
+    request<ServerUploadProgress>(`/api/assets/upload-progress/${encodeURIComponent(uploadId)}`),
+
+  uploadAssetWithProgress: (
+    file: File,
+    purpose: 'inpaint' | 'translate',
+    options?: {
+      uploadId?: string;
+      signal?: AbortSignal;
+      onProgress?: (event: UploadProgressEvent) => void;
+      onTransferComplete?: () => void;
+    }
+  ): Promise<{ items: MediaAsset[] }> => {
+    return new Promise((resolve, reject) => {
+      if (options?.signal?.aborted) {
+        reject(new UploadCancelledError());
+        return;
+      }
+
+      const fd = new FormData();
+      fd.append('files', file);
+
+      const qs = new URLSearchParams({ purpose });
+      if (options?.uploadId) qs.set('upload_id', options.uploadId);
+
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `/api/assets/upload?${qs.toString()}`);
+
+      const startTime = performance.now();
+      let lastSampleTime = startTime;
+      let lastSampleLoaded = 0;
+      let emaSpeed = 0;
+
+      const onAbort = () => {
+        xhr.abort();
+      };
+      const cleanup = () => {
+        options?.signal?.removeEventListener('abort', onAbort);
+      };
+      options?.signal?.addEventListener('abort', onAbort, { once: true });
+
+      xhr.upload.onprogress = (ev) => {
+        const total = ev.lengthComputable && ev.total > 0 ? ev.total : Math.max(1, file.size);
+        const loaded = Math.min(ev.loaded, total);
+        const now = performance.now();
+        const dt = (now - lastSampleTime) / 1000;
+        if (dt >= 0.12 && loaded >= lastSampleLoaded) {
+          const instSpeed = (loaded - lastSampleLoaded) / dt;
+          emaSpeed = emaSpeed > 0 ? emaSpeed * 0.65 + instSpeed * 0.35 : instSpeed;
+          lastSampleTime = now;
+          lastSampleLoaded = loaded;
+        }
+        const elapsed = Math.max(0.08, (now - startTime) / 1000);
+        const speedBps = emaSpeed > 0 ? emaSpeed : loaded / elapsed;
+        const remaining = Math.max(0, total - loaded);
+        const etaSec = speedBps > 0 ? remaining / speedBps : null;
+        const percent = Math.max(0, Math.min(100, Math.round((loaded / total) * 100)));
+        options?.onProgress?.({ loaded, total, percent, speedBps, etaSec });
+      };
+
+      xhr.upload.onload = () => {
+        const total = Math.max(1, file.size);
+        const elapsed = Math.max(0.08, (performance.now() - startTime) / 1000);
+        options?.onProgress?.({
+          loaded: total,
+          total,
+          percent: 100,
+          speedBps: emaSpeed > 0 ? emaSpeed : total / elapsed,
+          etaSec: 0,
+        });
+        options?.onTransferComplete?.();
+      };
+
+      xhr.onload = () => {
+        cleanup();
+        const rawText = xhr.responseText || '';
+        let parsed: any = null;
+        try {
+          parsed = rawText ? JSON.parse(rawText) : null;
+        } catch {
+          parsed = null;
+        }
+
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve((parsed || { items: [] }) as { items: MediaAsset[] });
+          return;
+        }
+
+        let detail = parsed?.detail || parsed?.message || `上传失败 (${xhr.status})`;
+        if (xhr.status === 413) {
+          detail = '文件体积超出网关限制，请压缩或分段后再上传';
+        }
+        reject(new Error(detail));
+      };
+
+      xhr.onerror = () => {
+        cleanup();
+        reject(new Error('网络连接中断，请检查网络后重试'));
+      };
+
+      xhr.onabort = () => {
+        cleanup();
+        reject(new UploadCancelledError());
+      };
+
+      xhr.send(fd);
     });
   },
 

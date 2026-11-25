@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { api } from '../api/client';
 import { CheckIcon, ChevronDownIcon, CloseIcon, InfoIcon } from '../components/Icons';
+import { VideoUploadZone } from '../components/VideoUploadZone';
 import type { InpaintConfig, MediaAsset, RegionItem, WorkspaceViewId } from '../types';
 import { calcInpaintFile, formatDuration, formatDurationCN } from '../utils/calc';
 
@@ -32,9 +33,6 @@ export function InpaintCreateView({
   onNavigate,
   onToast,
 }: Props) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [dragover, setDragover] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [presetIdx, setPresetIdx] = useState(0);
 
@@ -74,20 +72,6 @@ export function InpaintCreateView({
       updateCfg({ targets: config.targets.filter((t) => t !== target) });
     } else {
       updateCfg({ targets: [...config.targets, target] });
-    }
-  }
-
-  async function handleUpload(fileList: FileList | null) {
-    if (!fileList || !fileList.length) return;
-    setUploading(true);
-    try {
-      const res = await api.uploadAssets(fileList, 'inpaint');
-      await onFilesUpdated();
-      onToast(`已上传并解析 ${res.items.length} 个视频文件`);
-    } catch (err: any) {
-      onToast(err.message || '上传失败');
-    } finally {
-      setUploading(false);
     }
   }
 
@@ -182,50 +166,16 @@ export function InpaintCreateView({
 
       <div className="split-layout">
         <div className="col-main">
-          <div
-            className={`dropzone ${dragover ? 'dragover' : ''}`}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragover(true);
-            }}
-            onDragLeave={() => setDragover(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              setDragover(false);
-              handleUpload(e.dataTransfer.files);
-            }}
-          >
-            <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
-              <circle cx="17" cy="17" r="16" stroke="#38424E" strokeWidth="1.2" />
-              <path d="M17 23V12M12.5 16.2L17 11.7l4.5 4.5" stroke="#6FDFB2" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <div className="dropzone-title">{uploading ? '正在上传并用 ffprobe 解析视频元信息...' : '拖入视频文件进行批量上传'}</div>
-            <div className="dropzone-sub">mp4 / mov / avi / mkv · 单文件 ≤ 10 GB · 时长 ≤ 3 小时 · 长边 ≤ 3840</div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="video/*,.mp4,.mov,.avi,.mkv"
-              multiple
-              hidden
-              onChange={(e) => {
-                handleUpload(e.target.files);
-                e.target.value = '';
-              }}
-            />
-            <button
-              className="btn btn-tonal"
-              style={{ height: 36, padding: '0 18px' }}
-              disabled={uploading}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                <path d="M6.5 1.6v6.6M3.9 4.2l2.6-2.6 2.6 2.6" stroke="#4CE0A5" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M1.8 9.6v1.2a1 1 0 001 1h7.4a1 1 0 001-1V9.6" stroke="#4CE0A5" strokeWidth="1.4" strokeLinecap="round" />
-              </svg>
-              <span>{uploading ? '上传中...' : '选择文件（可多选）'}</span>
-            </button>
-            <div className="dropzone-tip">可一次多选，或直接拖入整个文件夹 · 单次最多 200 个文件 · 支持断点续传</div>
-          </div>
+          <VideoUploadZone
+            purpose="inpaint"
+            variant="dropzone"
+            accept="video/*,.mp4,.mov,.avi,.mkv,.flv,.webm"
+            idleTitle="拖入视频文件进行批量上传"
+            idleSubtitle="mp4 / mov / avi / mkv · 单文件 ≤ 10 GB · 时长 ≤ 3 小时 · 长边 ≤ 3840"
+            idleTip="可一次多选，或直接拖入整个文件夹 · 单次最多 200 个文件 · 实时显示传输与云端解析进度"
+            onAssetUploaded={onFilesUpdated}
+            onToast={onToast}
+          />
 
           <div className="panel">
             <div className="panel-head">

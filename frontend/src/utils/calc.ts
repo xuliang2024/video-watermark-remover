@@ -72,3 +72,35 @@ export function formatDurationCN(sec: number): string {
   const r = s % 60;
   return `${m} 分 ${String(r).padStart(2, '0')} 秒`;
 }
+
+export function formatBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let val = bytes;
+  let idx = 0;
+  while (val >= 1024 && idx < units.length - 1) {
+    val /= 1024;
+    idx += 1;
+  }
+  const digits = idx === 0 ? 0 : idx >= 3 ? 2 : 1;
+  return `${val.toFixed(digits)} ${units[idx]}`;
+}
+
+export function formatSpeed(bytesPerSec: number): string {
+  if (!Number.isFinite(bytesPerSec) || bytesPerSec <= 0) return '--';
+  if (bytesPerSec < 1024) return `${Math.round(bytesPerSec)} B/s`;
+  if (bytesPerSec < 1024 * 1024) return `${(bytesPerSec / 1024).toFixed(1)} KB/s`;
+  return `${(bytesPerSec / (1024 * 1024)).toFixed(1)} MB/s`;
+}
+
+export function formatEta(seconds: number | null): string {
+  if (seconds == null || !Number.isFinite(seconds) || seconds < 0) return '';
+  if (seconds < 1) return '即将完成';
+  const s = Math.ceil(seconds);
+  if (s < 60) return `剩余 ${s} 秒`;
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  if (m < 60) return `剩余 ${m} 分 ${String(r).padStart(2, '0')} 秒`;
+  const h = Math.floor(m / 60);
+  return `剩余 ${h} 时 ${m % 60} 分`;
+}

@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { api } from '../api/client';
 import { CheckIcon, CloseIcon } from '../components/Icons';
+import { VideoUploadZone } from '../components/VideoUploadZone';
 import type {
   LanguageItem,
   MediaAsset,
@@ -37,9 +38,6 @@ export function TranslateCreateView({
   onNavigate,
   onToast,
 }: Props) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [dragover, setDragover] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   function updateCfg(patch: Partial<TranslateConfig>) {
@@ -76,20 +74,6 @@ export function TranslateCreateView({
       updateCfg({ caption_formats: config.caption_formats.filter((f) => f !== fmt) });
     } else {
       updateCfg({ caption_formats: [...config.caption_formats, fmt] });
-    }
-  }
-
-  async function handleUpload(fileList: FileList | null) {
-    if (!fileList || !fileList.length) return;
-    setUploading(true);
-    try {
-      const res = await api.uploadAssets(fileList, 'translate');
-      await onFilesUpdated();
-      onToast(`已添加 ${res.items.length} 个源视频到翻译队列`);
-    } catch (err: any) {
-      onToast(err.message || '上传失败');
-    } finally {
-      setUploading(false);
     }
   }
 
@@ -142,46 +126,15 @@ export function TranslateCreateView({
 
       <div className="split-layout">
         <div className="col-main">
-          <div
-            className={`upload-strip ${dragover ? 'dragover' : ''}`}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragover(true);
-            }}
-            onDragLeave={() => setDragover(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              setDragover(false);
-              handleUpload(e.dataTransfer.files);
-            }}
-          >
-            <svg width="30" height="30" viewBox="0 0 30 30" fill="none" style={{ flexShrink: 0 }}>
-              <circle cx="15" cy="15" r="14" stroke="#38424E" strokeWidth="1.2" />
-              <path d="M15 21V11M11 14.8L15 10.8l4 4" stroke="#6FDFB2" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <div className="upload-strip-text">
-              <span className="dropzone-title" style={{ fontSize: 13 }}>
-                {uploading ? '正在上传并解析源文件...' : '拖入视频文件批量上传'}
-              </span>
-              <span className="mono" style={{ fontSize: 10.5, color: '#66707C' }}>
-                mp4 / mov / avi / mkv / flv / webm · 单文件 ≤ 10 GB · 2 秒 – 4 小时
-              </span>
-            </div>
-            <input
-              ref={inputRef}
-              type="file"
-              accept="video/*,.mp4,.mov,.avi,.mkv,.flv,.webm"
-              multiple
-              hidden
-              onChange={(e) => {
-                handleUpload(e.target.files);
-                e.target.value = '';
-              }}
-            />
-            <button className="btn btn-tonal btn-sm" disabled={uploading} onClick={() => inputRef.current?.click()}>
-              {uploading ? '上传中...' : '选择文件（可多选）'}
-            </button>
-          </div>
+          <VideoUploadZone
+            purpose="translate"
+            variant="strip"
+            accept="video/*,.mp4,.mov,.avi,.mkv,.flv,.webm"
+            idleTitle="拖入视频文件批量上传"
+            idleSubtitle="mp4 / mov / avi / mkv / flv / webm · 单文件 ≤ 10 GB · 2 秒 – 4 小时"
+            onAssetUploaded={onFilesUpdated}
+            onToast={onToast}
+          />
 
           <div className="panel panel-sm">
             <div className="panel-head compact">
