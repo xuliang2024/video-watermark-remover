@@ -1,7 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { api, triggerDownload } from '../api/client';
 import { DownloadIcon } from '../components/Icons';
 import type { TaskDetail, WorkspaceViewId } from '../types';
+
+const COMPARE_MIN_PCT = 2;
+const COMPARE_MAX_PCT = 98;
 
 interface Props {
   taskId: string;
@@ -17,13 +20,48 @@ function isVideoMediaUrl(url?: string | null): boolean {
 
 export function CompareView({ taskId, onNavigate, onToast }: Props) {
   const [task, setTask] = useState<TaskDetail | null>(null);
-  const [pct, setPct] = useState(50);
   const [dragging, setDragging] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(false);
   const stageRef = useRef<HTMLDivElement>(null);
+  const beforeLayerRef = useRef<HTMLDivElement>(null);
+  const wipeGuideRef = useRef<HTMLDivElement>(null);
   const afterVideoRef = useRef<HTMLVideoElement>(null);
   const beforeVideoRef = useRef<HTMLVideoElement>(null);
+  const pctRef = useRef(50);
+  const draggingRef = useRef(false);
+  const dragRafRef = useRef<number | null>(null);
+  const pendingPctRef = useRef<number | null>(null);
+  const stageRectRef = useRef<DOMRect | null>(null);
+
+  const applyPct = useCallback((nextPct: number) => {
+    const clamped = Math.max(COMPARE_MIN_PCT, Math.min(COMPARE_MAX_PCT, nextPct));
+    pctRef.current = clamped;
+    const beforeEl = beforeLayerRef.current;
+    const guideEl = wipeGuideRef.current;
+    const stageEl = stageRef.current;
+    if (beforeEl) {
+      beforeEl.style.clipPath = `inset(0 ${(100 - clamped).toFixed(4)}% 0 0)`;
+    }
+    if (guideEl) {
+      guideEl.style.transform = `translate3d(${clamped.toFixed(4)}%, 0, 0)`;
+    }
+    if (stageEl) {
+      stageEl.setAttribute('aria-valuenow', String(Math.round(clamped)));
+    }
+  }, []);
+
+  useLayoutEffect(() => {
+    applyPct(pctRef.current);
+  }, [applyPct]);
+
+  useEffect(() => {
+    return () => {
+      if (dragRafRef.current !== null) {
+        cancelAnimationFrame(dragRafRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     setPlaying(false);
@@ -35,12 +73,38 @@ export function CompareView({ taskId, onNavigate, onToast }: Props) {
       });
   }, [taskId]);
 
-  function setFromClientX(clientX: number) {
+  function clientXToPct(clientX: number, rect?: DOMRect | null) {
     const stage = stageRef.current;
-    if (!stage) return;
-    const rect = stage.getBoundingClientRect();
-    const next = ((clientX - rect.left) / rect.width) * 100;
-    setPct(Math.max(2, Math.min(98, next)));
+    const box = rect || (stage ? stage.getBoundingClientRect() : null);
+    if (!box || box.width <= 0) return pctRef.current;
+    const next = ((clientX - box.left) / box.width) * 100;
+    return Math.max(COMPARE_MIN_PCT, Math.min(COMPARE_MAX_PCT, next));
+  }
+
+  function scheduleDragPct(clientX: number) {
+    pendingPctRef.current = clientXToPct(clientX, stageRectRef.current);
+    if (dragRafRef.current !== null) return;
+    dragRafRef.current = requestAnimationFrame(() => {
+      dragRafRef.current = null;
+      if (pendingPctRef.current !== null) {
+        applyPct(pendingPctRef.current);
+        pendingPctRef.current = null;
+      }
+    });
+  }
+
+  function finishDrag() {
+    if (dragRafRef.current !== null) {
+      cancelAnimationFrame(dragRafRef.current);
+      dragRafRef.current = null;
+    }
+    if (pendingPctRef.current !== null) {
+      applyPct(pendingPctRef.current);
+      pendingPctRef.current = null;
+    }
+    stageRectRef.current = null;
+    draggingRef.current = false;
+    setDragging(false);
   }
 
   function togglePlay(e: React.MouseEvent) {
@@ -115,19 +179,40 @@ export function CompareView({ taskId, onNavigate, onToast }: Props) {
       <div
         ref={stageRef}
         className={`compare-stage ${dragging ? 'dragging' : ''}`}
+        role="slider"
         tabIndex={0}
         aria-label="左右拖动对比修复前后效果"
+        aria-valuemin={COMPARE_MIN_PCT}
+        aria-valuemax={COMPARE_MAX_PCT}
+        aria-valuenow={50}
         onPointerDown={(e) => {
           if ((e.target as HTMLElement).closest('.compare-video-controls')) return;
+          draggingRef.current = true;
           setDragging(true);
+          const rect = e.currentTarget.getBoundingClientRect();
+          stageRectRef.current = rect;
           e.currentTarget.setPointerCapture(e.pointerId);
-          setFromClientX(e.clientX);
+          if (dragRafRef.current !== null) {
+            cancelAnimationFrame(dragRafRef.current);
+            dragRafRef.current = null;
+          }
+          pendingPctRef.current = null;
+          applyPct(clientXToPct(e.clientX, rect));
         }}
-        onPointerMove={(e) => dragging && setFromClientX(e.clientX)}
-        onPointerUp={() => setDragging(false)}
+        onPointerMove={(e) => {
+          if (draggingRef.current) scheduleDragPct(e.clientX);
+        }}
+        onPointerUp={finishDrag}
+        onPointerCancel={finishDrag}
         onKeyDown={(e) => {
-          if (e.key === 'ArrowLeft') setPct((p) => Math.max(2, p - 3));
-          if (e.key === 'ArrowRight') setPct((p) => Math.min(98, p + 3));
+          if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            applyPct(pctRef.current - 3);
+          }
+          if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            applyPct(pctRef.current + 3);
+          }
         }}
       >
         <div className="compare-layer">
@@ -147,10 +232,7 @@ export function CompareView({ taskId, onNavigate, onToast }: Props) {
           )}
         </div>
 
-        <div
-          className="compare-layer compare-before"
-          style={{ clipPath: `inset(0 ${(100 - pct).toFixed(2)}% 0 0)` }}
-        >
+        <div ref={beforeLayerRef} className="compare-layer compare-before">
           {hasRealOutputVideo && hasRealInputVideo ? (
             <video
               ref={beforeVideoRef}
@@ -178,12 +260,16 @@ export function CompareView({ taskId, onNavigate, onToast }: Props) {
           )}
         </div>
 
-        <div className="compare-divider" style={{ left: `${pct.toFixed(2)}%` }}></div>
-        <div className="compare-handle" style={{ left: `${pct.toFixed(2)}%` }}>
-          <svg width="16" height="14" viewBox="0 0 16 14" fill="none">
-            <path d="M5.6 4L2.4 7l3.2 3" stroke="#06231A" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M10.4 4L13.6 7l-3.2 3" stroke="#06231A" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+        <div ref={wipeGuideRef} className="compare-wipe-guide" aria-hidden="true">
+          <div className="compare-divider"></div>
+          <div className="compare-handle">
+            <div className="compare-handle-knob">
+              <svg width="16" height="14" viewBox="0 0 16 14" fill="none">
+                <path d="M5.6 4L2.4 7l3.2 3" stroke="#06231A" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M10.4 4L13.6 7l-3.2 3" stroke="#06231A" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+          </div>
         </div>
         <div className="compare-tag before">原片 · 含字幕与水印</div>
         <div className="compare-tag after">修复后</div>

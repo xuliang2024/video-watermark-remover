@@ -1,6 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { BrandLogo } from '../components/Icons';
 import type { WorkspaceViewId } from '../types';
+
+const WIPE_MIN_PCT = 4;
+const WIPE_MAX_PCT = 96;
+const WIPE_CENTER_PCT = 48;
+const WIPE_AMPLITUDE_PCT = 24;
+const WIPE_ANGULAR_SPEED = 0.9; // rad/s
 
 interface Props {
   onEnterWorkspace: (view?: WorkspaceViewId) => void;
@@ -106,11 +112,21 @@ function useAnimatedNumber(target: number, duration = 260) {
 
 export function LandingPage({ onEnterWorkspace }: Props) {
   const [heroMode, setHeroMode] = useState<keyof typeof HERO_MODES>('wipe');
-  const [sliderPct, setSliderPct] = useState(54);
-  const [autoSweep, setAutoSweep] = useState(true);
-  const [stageHovered, setStageHovered] = useState(false);
   const [dragging, setDragging] = useState(false);
   const compareRef = useRef<HTMLDivElement>(null);
+  const beforeLayerRef = useRef<HTMLDivElement>(null);
+  const wipeGuideRef = useRef<HTMLDivElement>(null);
+  const wipePctRef = useRef(WIPE_CENTER_PCT);
+  const sweepPhaseRef = useRef(0);
+  const autoSweepRef = useRef(true);
+  const stageHoveredRef = useRef(false);
+  const stageVisibleRef = useRef(true);
+  const hasStartedSweepRef = useRef(false);
+  const draggingRef = useRef(false);
+  const sweepSpeedScaleRef = useRef(0);
+  const dragRafRef = useRef<number | null>(null);
+  const pendingDragPctRef = useRef<number | null>(null);
+  const stageRectRef = useRef<DOMRect | null>(null);
 
   const [inpaintTab, setInpaintTab] = useState<'inpaint' | 'annotate'>('inpaint');
   const [translateTab, setTranslateTab] = useState<'result' | 'translate'>('result');
@@ -134,29 +150,114 @@ export function LandingPage({ onEnterWorkspace }: Props) {
   const heroCfg = HERO_MODES[heroMode];
   const activeDub = DUB_SAMPLES[dubIdx];
 
-  // Subtle idle wipe sweep on hero stage until user interacts
+  const applyWipePct = useCallback((nextPct: number) => {
+    const clamped = Math.max(WIPE_MIN_PCT, Math.min(WIPE_MAX_PCT, nextPct));
+    wipePctRef.current = clamped;
+    const beforeEl = beforeLayerRef.current;
+    const guideEl = wipeGuideRef.current;
+    const compareEl = compareRef.current;
+    if (beforeEl) {
+      beforeEl.style.clipPath = `inset(0 ${(100 - clamped).toFixed(4)}% 0 0)`;
+    }
+    if (guideEl) {
+      guideEl.style.transform = `translate3d(${clamped.toFixed(4)}%, 0, 0)`;
+    }
+    if (compareEl) {
+      compareEl.setAttribute('aria-valuenow', String(Math.round(clamped)));
+    }
+  }, []);
+
+  useLayoutEffect(() => {
+    applyWipePct(wipePctRef.current);
+  }, [applyWipePct]);
+
+  // Continuous-phase idle wipe sweep (zero React re-renders, zero jump on hover/leave)
   useEffect(() => {
-    if (heroMode !== 'wipe' || !autoSweep || stageHovered || dragging) return;
+    applyWipePct(wipePctRef.current);
+    if (heroMode !== 'wipe' || !autoSweepRef.current) return;
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
 
+    const compareEl = compareRef.current;
+    let observer: IntersectionObserver | null = null;
+    if (compareEl && 'IntersectionObserver' in window) {
+      observer = new IntersectionObserver(
+        (entries) => {
+          const entry = entries[0];
+          if (entry) {
+            stageVisibleRef.current = entry.isIntersecting;
+          }
+        },
+        { threshold: 0.05 },
+      );
+      observer.observe(compareEl);
+    }
+
     let raf = 0;
-    let start: number | null = null;
+    let lastNow: number | null = null;
+    sweepSpeedScaleRef.current = 0;
+
     const step = (now: number) => {
-      if (start === null) start = now;
-      const elapsed = (now - start) / 1000;
-      const pct = 48 + Math.sin(elapsed * 1.1) * 24;
-      setSliderPct(pct);
+      if (!autoSweepRef.current) {
+        raf = 0;
+        return;
+      }
+      if (lastNow === null) lastNow = now;
+      const dt = Math.min(0.032, Math.max(0, (now - lastNow) / 1000));
+      lastNow = now;
+
+      const targetScale =
+        document.hidden ||
+        !stageVisibleRef.current ||
+        stageHoveredRef.current ||
+        draggingRef.current
+          ? 0
+          : 1;
+      const rate = targetScale > sweepSpeedScaleRef.current ? 3.5 : 6.0;
+      sweepSpeedScaleRef.current +=
+        (targetScale - sweepSpeedScaleRef.current) * Math.min(1, dt * rate);
+      if (Math.abs(targetScale - sweepSpeedScaleRef.current) < 0.002) {
+        sweepSpeedScaleRef.current = targetScale;
+      }
+
+      if (sweepSpeedScaleRef.current > 0 && dt > 0) {
+        sweepPhaseRef.current += dt * WIPE_ANGULAR_SPEED * sweepSpeedScaleRef.current;
+        const nextPct =
+          WIPE_CENTER_PCT + Math.sin(sweepPhaseRef.current) * WIPE_AMPLITUDE_PCT;
+        applyWipePct(nextPct);
+      }
+
       raf = requestAnimationFrame(step);
     };
-    const timer = window.setTimeout(() => {
-      raf = requestAnimationFrame(step);
-    }, 450);
+
+    const delayMs = hasStartedSweepRef.current ? 120 : 720;
+    const startTimer = window.setTimeout(() => {
+      hasStartedSweepRef.current = true;
+      if (autoSweepRef.current) {
+        lastNow = null;
+        raf = requestAnimationFrame(step);
+      }
+    }, delayMs);
+
+    const onVisChange = () => {
+      if (!document.hidden) lastNow = null;
+    };
+    document.addEventListener('visibilitychange', onVisChange);
 
     return () => {
-      window.clearTimeout(timer);
-      cancelAnimationFrame(raf);
+      window.clearTimeout(startTimer);
+      if (raf) cancelAnimationFrame(raf);
+      if (observer) observer.disconnect();
+      document.removeEventListener('visibilitychange', onVisChange);
     };
-  }, [heroMode, autoSweep, stageHovered, dragging]);
+  }, [heroMode, applyWipePct]);
+
+  useEffect(() => {
+    return () => {
+      if (dragRafRef.current !== null) {
+        cancelAnimationFrame(dragRafRef.current);
+      }
+    };
+  }, []);
 
   // Scroll-triggered reveal for lower sections
   useEffect(() => {
@@ -186,12 +287,38 @@ export function LandingPage({ onEnterWorkspace }: Props) {
     return () => observer.disconnect();
   }, []);
 
-  function updateSliderFromClientX(clientX: number) {
+  function clientXToPct(clientX: number, rect?: DOMRect | null) {
     const el = compareRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const pct = ((clientX - rect.left) / rect.width) * 100;
-    setSliderPct(Math.max(4, Math.min(96, pct)));
+    const box = rect || (el ? el.getBoundingClientRect() : null);
+    if (!box || box.width <= 0) return wipePctRef.current;
+    const pct = ((clientX - box.left) / box.width) * 100;
+    return Math.max(WIPE_MIN_PCT, Math.min(WIPE_MAX_PCT, pct));
+  }
+
+  function scheduleDragWipe(clientX: number) {
+    pendingDragPctRef.current = clientXToPct(clientX, stageRectRef.current);
+    if (dragRafRef.current !== null) return;
+    dragRafRef.current = requestAnimationFrame(() => {
+      dragRafRef.current = null;
+      if (pendingDragPctRef.current !== null) {
+        applyWipePct(pendingDragPctRef.current);
+        pendingDragPctRef.current = null;
+      }
+    });
+  }
+
+  function finishDrag() {
+    if (dragRafRef.current !== null) {
+      cancelAnimationFrame(dragRafRef.current);
+      dragRafRef.current = null;
+    }
+    if (pendingDragPctRef.current !== null) {
+      applyWipePct(pendingDragPctRef.current);
+      pendingDragPctRef.current = null;
+    }
+    stageRectRef.current = null;
+    draggingRef.current = false;
+    setDragging(false);
   }
 
   // Calculator math (separated modules)
@@ -371,28 +498,53 @@ export function LandingPage({ onEnterWorkspace }: Props) {
             <div
               ref={compareRef}
               className={`hero-compare ${heroCfg.isTranslate ? 'translate-mode' : ''} ${dragging ? 'dragging' : ''}`}
+              role="slider"
+              tabIndex={heroCfg.isTranslate ? -1 : 0}
               aria-label="左右拖动对比去水印效果"
-              onMouseEnter={() => setStageHovered(true)}
-              onMouseLeave={() => setStageHovered(false)}
+              aria-valuemin={WIPE_MIN_PCT}
+              aria-valuemax={WIPE_MAX_PCT}
+              aria-valuenow={WIPE_CENTER_PCT}
+              onPointerEnter={(e) => {
+                if (e.pointerType === 'mouse') stageHoveredRef.current = true;
+              }}
+              onPointerLeave={(e) => {
+                if (e.pointerType === 'mouse') stageHoveredRef.current = false;
+              }}
               onPointerDown={(e) => {
                 if (heroCfg.isTranslate) return;
-                setAutoSweep(false);
+                autoSweepRef.current = false;
+                draggingRef.current = true;
                 setDragging(true);
+                const rect = e.currentTarget.getBoundingClientRect();
+                stageRectRef.current = rect;
                 e.currentTarget.setPointerCapture(e.pointerId);
-                updateSliderFromClientX(e.clientX);
+                if (dragRafRef.current !== null) {
+                  cancelAnimationFrame(dragRafRef.current);
+                  dragRafRef.current = null;
+                }
+                pendingDragPctRef.current = null;
+                applyWipePct(clientXToPct(e.clientX, rect));
               }}
-              onPointerMove={(e) => dragging && updateSliderFromClientX(e.clientX)}
-              onPointerUp={() => setDragging(false)}
-              onPointerCancel={() => setDragging(false)}
+              onPointerMove={(e) => {
+                if (draggingRef.current) scheduleDragWipe(e.clientX);
+              }}
+              onPointerUp={finishDrag}
+              onPointerCancel={finishDrag}
+              onKeyDown={(e) => {
+                if (heroCfg.isTranslate) return;
+                if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                  e.preventDefault();
+                  autoSweepRef.current = false;
+                  const delta = e.key === 'ArrowLeft' ? -2.5 : 2.5;
+                  applyWipePct(wipePctRef.current + delta);
+                }
+              }}
             >
               <div className="hero-layer">
                 <img src="/assets/frame_16x9.png" alt="无痕修复后视频画面" />
               </div>
 
-              <div
-                className="hero-layer hero-before-layer"
-                style={{ clipPath: `inset(0 ${(100 - sliderPct).toFixed(2)}% 0 0)` }}
-              >
+              <div ref={beforeLayerRef} className="hero-layer hero-before-layer">
                 <img src="/assets/frame_16x9.png" alt="含水印与硬字幕原片画面" />
                 <div className="hero-drama-tag">第 01 集 · 雨夜来客</div>
                 <div className="hero-watermark-badge">
@@ -420,17 +572,21 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                 <div className={`hero-burned-caption ${heroCfg.langClass}`}>{heroCfg.caption}</div>
               </div>
 
-              <div className="hero-divider" style={{ left: `${sliderPct.toFixed(2)}%` }}></div>
-              <div className="hero-handle" style={{ left: `${sliderPct.toFixed(2)}%` }}>
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path
-                    d="M5.5 5L2.5 8l3 3M10.5 5l3 3-3 3"
-                    stroke="#0D0E10"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+              <div ref={wipeGuideRef} className="hero-wipe-guide" aria-hidden="true">
+                <div className="hero-divider"></div>
+                <div className="hero-handle">
+                  <div className="hero-handle-knob">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path
+                        d="M5.5 5L2.5 8l3 3M10.5 5l3 3-3 3"
+                        stroke="#0D0E10"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
+                </div>
               </div>
 
               <span className="stage-pill before">原片</span>
