@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { BrandLogo } from '../components/Icons';
+import {
+  EngineStorySections,
+  HeroRotatingTitle,
+  TimelineRail,
+  type TimelineChapter,
+} from '../components/LandingInteractive';
 import type { WorkspaceViewId } from '../types';
 
 const WIPE_MIN_PCT = 4;
@@ -7,18 +13,33 @@ const WIPE_MAX_PCT = 96;
 const WIPE_CENTER_PCT = 48;
 const WIPE_AMPLITUDE_PCT = 24;
 const WIPE_ANGULAR_SPEED = 0.9; // rad/s
+const STAGE_CHAPTER_MS = 5200;
 
 interface Props {
   onEnterWorkspace: (view?: WorkspaceViewId) => void;
 }
 
-const HERO_MODES = {
+type HeroModeKey = 'wipe' | 'en-US' | 'ja-JP' | 'ko-KR';
+const HERO_MODE_ORDER: HeroModeKey[] = ['wipe', 'en-US', 'ja-JP', 'ko-KR'];
+type PresetKey = 'drama' | 'ads' | 'course' | 'custom';
+
+const HERO_MODES: Record<
+  HeroModeKey,
+  {
+    isTranslate: boolean;
+    badge: string;
+    caption: string;
+    langClass: string;
+    targetView: WorkspaceViewId;
+    linkText: string;
+  }
+> = {
   wipe: {
     isTranslate: false,
     badge: '',
     caption: '',
     langClass: '',
-    targetView: 'compare' as WorkspaceViewId,
+    targetView: 'compare',
     linkText: '工作台对比 ↗',
   },
   'en-US': {
@@ -26,7 +47,7 @@ const HERO_MODES = {
     badge: '英语配音 · 原声音色',
     caption: "I won't wait for you anymore.",
     langClass: '',
-    targetView: 'translate-result' as WorkspaceViewId,
+    targetView: 'translate-result',
     linkText: '查看成片 ↗',
   },
   'ja-JP': {
@@ -34,7 +55,7 @@ const HERO_MODES = {
     badge: '日语配音 · 原声音色',
     caption: 'もう、あなたを待たない。',
     langClass: 'lang-ja',
-    targetView: 'translate-result' as WorkspaceViewId,
+    targetView: 'translate-result',
     linkText: '查看成片 ↗',
   },
   'ko-KR': {
@@ -42,17 +63,10 @@ const HERO_MODES = {
     badge: '韩语配音 · 原声音色',
     caption: '더는 당신을 기다리지 않을게요.',
     langClass: 'lang-ko',
-    targetView: 'translate-result' as WorkspaceViewId,
+    targetView: 'translate-result',
     linkText: '查看成片 ↗',
   },
 };
-
-const DUB_SAMPLES = [
-  { code: 'EN', label: '英语', voice: '原声复刻 · 0.98× 语速', line: "I won't wait for you anymore.", langClass: '' },
-  { code: 'JA', label: '日语', voice: '原声复刻 · NotoSansJP', line: 'もう、あなたを待たない。', langClass: 'lang-ja' },
-  { code: 'KO', label: '韩语', voice: '原声复刻 · NotoSansKR', line: '더는 당신을 기다리지 않을게요.', langClass: 'lang-ko' },
-  { code: 'ES', label: '西语', voice: '情感配音 · 字幕同步', line: 'Ya no voy a esperarte más.', langClass: '' },
-] as const;
 
 const FAQ_ITEMS = [
   {
@@ -70,6 +84,53 @@ const FAQ_ITEMS = [
   {
     q: '处理后的视频与字幕保留多久？',
     a: '去水印成片保留 24 小时，多语翻译成片与字幕保留 3 天，批次完成后建议及时下载归档。',
+  },
+];
+
+const RAIL_CHAPTERS: TimelineChapter[] = [
+  {
+    id: 'top',
+    timecode: '00:00',
+    label: '对比舞台',
+    desc: '批量擦除角标与硬字幕，1:1 复刻原声配音',
+    accent: 'emerald',
+  },
+  {
+    id: 'engine-inpaint',
+    timecode: '01:00',
+    label: '批量去水印',
+    desc: '精准抹除角标、台标与硬字幕',
+    accent: 'emerald',
+    stepSelector: '[data-story-step]',
+  },
+  {
+    id: 'engine-translate',
+    timecode: '02:00',
+    label: '多语翻译',
+    desc: '1:1 复刻音色，一次提交多语出片',
+    accent: 'cobalt',
+    stepSelector: '[data-story-step]',
+  },
+  {
+    id: 'scenarios',
+    timecode: '03:00',
+    label: '应用场景',
+    desc: '短剧出海、课程内训与跨境投放',
+    accent: 'amber',
+  },
+  {
+    id: 'pricing',
+    timecode: '04:00',
+    label: '按量计费',
+    desc: '修复与翻译独立计价，可单独使用或串联',
+    accent: 'emerald',
+  },
+  {
+    id: 'faq',
+    timecode: '05:00',
+    label: '常见问题',
+    desc: '上传、计费与成片保留',
+    accent: 'ivory',
   },
 ];
 
@@ -111,8 +172,11 @@ function useAnimatedNumber(target: number, duration = 260) {
 }
 
 export function LandingPage({ onEnterWorkspace }: Props) {
-  const [heroMode, setHeroMode] = useState<keyof typeof HERO_MODES>('wipe');
+  const [heroMode, setHeroMode] = useState<HeroModeKey>('wipe');
+  const [stageAutoPlay, setStageAutoPlay] = useState(true);
+  const [chapterProgress, setChapterProgress] = useState(0);
   const [dragging, setDragging] = useState(false);
+
   const compareRef = useRef<HTMLDivElement>(null);
   const beforeLayerRef = useRef<HTMLDivElement>(null);
   const wipeGuideRef = useRef<HTMLDivElement>(null);
@@ -128,11 +192,7 @@ export function LandingPage({ onEnterWorkspace }: Props) {
   const pendingDragPctRef = useRef<number | null>(null);
   const stageRectRef = useRef<DOMRect | null>(null);
 
-  const [inpaintTab, setInpaintTab] = useState<'inpaint' | 'annotate'>('inpaint');
-  const [translateTab, setTranslateTab] = useState<'result' | 'translate'>('result');
-  const [dubIdx, setDubIdx] = useState(0);
-
-  // Cost calculator state (separated Inpaint & Translate, lowest-price defaults)
+  const [activePreset, setActivePreset] = useState<PresetKey>('custom');
   const [minutesPerFile, setMinutesPerFile] = useState(1);
   const [fileCount, setFileCount] = useState(1);
   const [inpaintEnabled, setInpaintEnabled] = useState(true);
@@ -143,12 +203,134 @@ export function LandingPage({ onEnterWorkspace }: Props) {
   const [translateMode, setTranslateMode] = useState<'standard' | 'high_quality'>('standard');
   const [langCount, setLangCount] = useState(1);
 
+  const presetTabsRef = useRef<HTMLDivElement>(null);
+  const [presetPillStyle, setPresetPillStyle] = useState<React.CSSProperties>({});
+
   const [openFaq, setOpenFaq] = useState<Record<number, boolean>>({});
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeNavId, setActiveNavId] = useState<string>('top');
+  const [showBackTop, setShowBackTop] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
   const heroCfg = HERO_MODES[heroMode];
-  const activeDub = DUB_SAMPLES[dubIdx];
+
+  const applyPreset = (key: PresetKey) => {
+    setActivePreset(key);
+    if (key === 'drama') {
+      setMinutesPerFile(2);
+      setFileCount(60);
+      setInpaintEnabled(true);
+      setInpaintTier('precise');
+      setResolution('1080p');
+      setFpsTier('30');
+      setTranslateEnabled(true);
+      setTranslateMode('high_quality');
+      setLangCount(3);
+    } else if (key === 'ads') {
+      setMinutesPerFile(1);
+      setFileCount(10);
+      setInpaintEnabled(true);
+      setInpaintTier('lite');
+      setResolution('1080p');
+      setFpsTier('30');
+      setTranslateEnabled(true);
+      setTranslateMode('standard');
+      setLangCount(4);
+    } else if (key === 'course') {
+      setMinutesPerFile(30);
+      setFileCount(4);
+      setInpaintEnabled(true);
+      setInpaintTier('standard');
+      setResolution('1080p');
+      setFpsTier('24');
+      setTranslateEnabled(true);
+      setTranslateMode('standard');
+      setLangCount(2);
+    }
+  };
+
+  const updatePresetPill = useCallback(() => {
+    const wrap = presetTabsRef.current;
+    if (!wrap) return;
+    const btn = wrap.querySelector<HTMLButtonElement>(`[data-preset="${activePreset}"]`);
+    if (btn && btn.offsetWidth) {
+      setPresetPillStyle({
+        width: `${btn.offsetWidth}px`,
+        transform: `translateX(${btn.offsetLeft}px)`,
+      });
+    }
+  }, [activePreset]);
+
+  useLayoutEffect(() => {
+    updatePresetPill();
+  }, [updatePresetPill]);
+
+  useEffect(() => {
+    const wrap = presetTabsRef.current;
+    if (!wrap || !('ResizeObserver' in window)) return;
+    const ro = new ResizeObserver(() => updatePresetPill());
+    ro.observe(wrap);
+    return () => ro.disconnect();
+  }, [updatePresetPill]);
+
+  useEffect(() => {
+    const sectionIds = ['top', 'engine-inpaint', 'engine-translate', 'scenarios', 'pricing', 'faq'];
+    const onScroll = () => {
+      const sy = window.scrollY;
+      setShowBackTop(sy > window.innerHeight * 0.85);
+
+      const probe = sy + 140;
+      let curr = 'top';
+      for (const id of sectionIds) {
+        const el = document.getElementById(id);
+        if (el && el.getBoundingClientRect().top + sy <= probe) {
+          curr = id;
+        }
+      }
+      setActiveNavId(curr);
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    if (!stageAutoPlay) {
+      setChapterProgress(1);
+      return;
+    }
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      setChapterProgress(1);
+      return;
+    }
+
+    let raf = 0;
+    let elapsed = 0;
+    let lastNow: number | null = null;
+    setChapterProgress(0);
+
+    const tick = (now: number) => {
+      if (lastNow === null) lastNow = now;
+      const dt = Math.min(64, Math.max(0, now - lastNow));
+      lastNow = now;
+
+      const paused = document.hidden || !stageVisibleRef.current || stageHoveredRef.current || draggingRef.current;
+      if (!paused) {
+        elapsed += dt;
+        const p = Math.min(1, elapsed / STAGE_CHAPTER_MS);
+        setChapterProgress(p);
+        if (elapsed >= STAGE_CHAPTER_MS) {
+          const nextIdx = (HERO_MODE_ORDER.indexOf(heroMode) + 1) % HERO_MODE_ORDER.length;
+          setHeroMode(HERO_MODE_ORDER[nextIdx]);
+          return;
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    };
+
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [heroMode, stageAutoPlay]);
 
   const applyWipePct = useCallback((nextPct: number) => {
     const clamped = Math.max(WIPE_MIN_PCT, Math.min(WIPE_MAX_PCT, nextPct));
@@ -171,7 +353,6 @@ export function LandingPage({ onEnterWorkspace }: Props) {
     applyWipePct(wipePctRef.current);
   }, [applyWipePct]);
 
-  // Continuous-phase idle wipe sweep (zero React re-renders, zero jump on hover/leave)
   useEffect(() => {
     applyWipePct(wipePctRef.current);
     if (heroMode !== 'wipe' || !autoSweepRef.current) return;
@@ -197,32 +378,22 @@ export function LandingPage({ onEnterWorkspace }: Props) {
     sweepSpeedScaleRef.current = 0;
 
     const step = (now: number) => {
-      if (!autoSweepRef.current) {
-        raf = 0;
-        return;
-      }
+      if (!autoSweepRef.current) return;
       if (lastNow === null) lastNow = now;
       const dt = Math.min(0.032, Math.max(0, (now - lastNow) / 1000));
       lastNow = now;
 
       const targetScale =
-        document.hidden ||
-        !stageVisibleRef.current ||
-        stageHoveredRef.current ||
-        draggingRef.current
-          ? 0
-          : 1;
+        document.hidden || !stageVisibleRef.current || stageHoveredRef.current || draggingRef.current ? 0 : 1;
       const rate = targetScale > sweepSpeedScaleRef.current ? 3.5 : 6.0;
-      sweepSpeedScaleRef.current +=
-        (targetScale - sweepSpeedScaleRef.current) * Math.min(1, dt * rate);
+      sweepSpeedScaleRef.current += (targetScale - sweepSpeedScaleRef.current) * Math.min(1, dt * rate);
       if (Math.abs(targetScale - sweepSpeedScaleRef.current) < 0.002) {
         sweepSpeedScaleRef.current = targetScale;
       }
 
       if (sweepSpeedScaleRef.current > 0 && dt > 0) {
         sweepPhaseRef.current += dt * WIPE_ANGULAR_SPEED * sweepSpeedScaleRef.current;
-        const nextPct =
-          WIPE_CENTER_PCT + Math.sin(sweepPhaseRef.current) * WIPE_AMPLITUDE_PCT;
+        const nextPct = WIPE_CENTER_PCT + Math.sin(sweepPhaseRef.current) * WIPE_AMPLITUDE_PCT;
         applyWipePct(nextPct);
       }
 
@@ -259,7 +430,6 @@ export function LandingPage({ onEnterWorkspace }: Props) {
     };
   }, []);
 
-  // Scroll-triggered reveal for lower sections
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
@@ -321,7 +491,16 @@ export function LandingPage({ onEnterWorkspace }: Props) {
     setDragging(false);
   }
 
-  // Calculator math (separated modules)
+  const handleSelectStageMode = (mode: HeroModeKey) => {
+    setStageAutoPlay(false);
+    setHeroMode(mode);
+  };
+
+  const scrollToTop = () => {
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
+  };
+
   const totalInputMin = minutesPerFile * fileCount;
   const inpaintPriceMap = { lite: 0.5, standard: 1.5, precise: 3.0 };
   const inpaintUnit = inpaintPriceMap[inpaintTier];
@@ -353,11 +532,21 @@ export function LandingPage({ onEnterWorkspace }: Props) {
           </a>
 
           <nav className="header-nav" aria-label="页面导航">
-            <a href="#workflow">工作流</a>
-            <a href="#features">核心能力</a>
-            <a href="#scenarios">应用场景</a>
-            <a href="#pricing">按量计费</a>
-            <a href="#faq">常见问题</a>
+            <a href="#engine-inpaint" className={activeNavId === 'engine-inpaint' ? 'is-active' : ''}>
+              批量去水印
+            </a>
+            <a href="#engine-translate" className={activeNavId === 'engine-translate' ? 'is-active' : ''}>
+              多语翻译
+            </a>
+            <a href="#scenarios" className={activeNavId === 'scenarios' ? 'is-active' : ''}>
+              应用场景
+            </a>
+            <a href="#pricing" className={activeNavId === 'pricing' ? 'is-active' : ''}>
+              按量计费
+            </a>
+            <a href="#faq" className={activeNavId === 'faq' ? 'is-active' : ''}>
+              常见问题
+            </a>
           </nav>
 
           <div className="header-actions">
@@ -395,12 +584,22 @@ export function LandingPage({ onEnterWorkspace }: Props) {
 
         {mobileMenuOpen && (
           <div className="mobile-nav-drawer">
-            <nav className="mobile-nav-links" aria-label="移动端页面导航">
-              <a href="#workflow" onClick={() => setMobileMenuOpen(false)}>工作流</a>
-              <a href="#features" onClick={() => setMobileMenuOpen(false)}>核心能力</a>
-              <a href="#scenarios" onClick={() => setMobileMenuOpen(false)}>应用场景</a>
-              <a href="#pricing" onClick={() => setMobileMenuOpen(false)}>按量计费</a>
-              <a href="#faq" onClick={() => setMobileMenuOpen(false)}>常见问题</a>
+            <nav className="mobile-nav-links" aria-label="页面导航">
+              <a href="#engine-inpaint" onClick={() => setMobileMenuOpen(false)}>
+                批量去水印
+              </a>
+              <a href="#engine-translate" onClick={() => setMobileMenuOpen(false)}>
+                多语翻译
+              </a>
+              <a href="#scenarios" onClick={() => setMobileMenuOpen(false)}>
+                应用场景
+              </a>
+              <a href="#pricing" onClick={() => setMobileMenuOpen(false)}>
+                按量计费
+              </a>
+              <a href="#faq" onClick={() => setMobileMenuOpen(false)}>
+                常见问题
+              </a>
             </nav>
             <div className="mobile-nav-actions">
               <button
@@ -435,13 +634,13 @@ export function LandingPage({ onEnterWorkspace }: Props) {
         )}
       </header>
 
+      <TimelineRail chapters={RAIL_CHAPTERS} />
+
       <section className="hero-section" id="top">
         <div className="hero-ambient" aria-hidden="true"></div>
         <div className="container hero">
-          <h1 className="hero-title hero-enter" style={{ animationDelay: '0ms' }}>
-            <span className="hero-title-part">视频无痕去水印，</span>
-            <span className="hero-title-part">一键翻译 31 种语言</span>
-          </h1>
+          <HeroRotatingTitle />
+
           <p className="hero-sub hero-enter" style={{ animationDelay: '60ms' }}>
             批量擦除角标与硬字幕，1:1 复刻原声配音
           </p>
@@ -471,7 +670,7 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                 <span>00:01:14:08 · S01E01_雨夜来客.mp4</span>
               </div>
 
-              <div className="stage-mode-tabs" role="tablist" aria-label="效果预览模式">
+              <div className="stage-mode-tabs" role="tablist">
                 {(
                   [
                     ['wipe', '擦除对比'],
@@ -479,15 +678,45 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                     ['ja-JP', '日语'],
                     ['ko-KR', '韩语'],
                   ] as const
-                ).map(([mode, label]) => (
-                  <button
-                    key={mode}
-                    className={`stage-tab ${heroMode === mode ? 'active' : ''}`}
-                    onClick={() => setHeroMode(mode)}
-                  >
-                    {label}
-                  </button>
-                ))}
+                ).map(([mode, label]) => {
+                  const isActive = heroMode === mode;
+                  return (
+                    <button
+                      key={mode}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      className={`stage-tab ${isActive ? 'active' : ''}`}
+                      onClick={() => handleSelectStageMode(mode)}
+                    >
+                      <i
+                        className="stage-tab-bar"
+                        style={{
+                          width: `${isActive ? (stageAutoPlay ? chapterProgress * 100 : 100) : 0}%`,
+                        }}
+                      />
+                      <span>{label}</span>
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  className="stage-play-toggle"
+                  title={stageAutoPlay ? '暂停自动演示' : '恢复自动演示'}
+                  aria-label={stageAutoPlay ? '暂停自动演示' : '恢复自动演示'}
+                  onClick={() => setStageAutoPlay((v) => !v)}
+                >
+                  {stageAutoPlay ? (
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                      <rect x="3" y="2.5" width="3.5" height="11" rx="1" />
+                      <rect x="9.5" y="2.5" width="3.5" height="11" rx="1" />
+                    </svg>
+                  ) : (
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                      <path d="M4.5 2.8l8.5 5.2-8.5 5.2V2.8z" />
+                    </svg>
+                  )}
+                </button>
               </div>
 
               <button className="stage-open-link" onClick={() => onEnterWorkspace(heroCfg.targetView)}>
@@ -513,6 +742,7 @@ export function LandingPage({ onEnterWorkspace }: Props) {
               onPointerDown={(e) => {
                 if (heroCfg.isTranslate) return;
                 autoSweepRef.current = false;
+                setStageAutoPlay(false);
                 draggingRef.current = true;
                 setDragging(true);
                 const rect = e.currentTarget.getBoundingClientRect();
@@ -535,6 +765,7 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                 if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
                   e.preventDefault();
                   autoSweepRef.current = false;
+                  setStageAutoPlay(false);
                   const delta = e.key === 'ArrowLeft' ? -2.5 : 2.5;
                   applyWipePct(wipePctRef.current + delta);
                 }
@@ -593,6 +824,19 @@ export function LandingPage({ onEnterWorkspace }: Props) {
               <span className="stage-pill after">修复后</span>
             </div>
           </div>
+
+          <a className="hero-scroll-cue hero-enter" style={{ animationDelay: '260ms' }} href="#engine-inpaint">
+            <span>下滑查看完整流水线</span>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M8 3.5v9M4.5 9l3.5 3.5L11.5 9"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </a>
         </div>
       </section>
 
@@ -629,297 +873,97 @@ export function LandingPage({ onEnterWorkspace }: Props) {
         </div>
       </section>
 
-      <section className="section" id="workflow">
-        <div className="container">
-          <div className="section-head" data-reveal>
-            <h2 className="section-title">三步直出成片</h2>
-          </div>
+      <EngineStorySections onEnterWorkspace={onEnterWorkspace} />
 
-          <div className="steps-grid">
-            <div className="step-card" data-reveal style={{ '--stagger': '0ms' } as React.CSSProperties}>
-              <div className="step-visual visual-upload" aria-hidden="true">
-                <div className="mini-file-row">
-                  <span className="mini-file-dot"></span>
-                  <span className="mini-file-name">S01E01_雨夜来客.mp4</span>
-                  <span className="mini-file-meta">1080p</span>
-                </div>
-                <div className="mini-file-row active">
-                  <span className="mini-file-dot"></span>
-                  <span className="mini-file-name">S01E02_灯下无声.mp4</span>
-                  <span className="mini-file-meta">30fps</span>
-                </div>
-                <div className="mini-file-row">
-                  <span className="mini-file-dot"></span>
-                  <span className="mini-file-name">S01E03_旧信.mp4</span>
-                  <span className="mini-file-meta">4K</span>
-                </div>
-              </div>
-              <div className="step-top">
-                <span className="step-num">01</span>
-                <button className="step-jump" onClick={() => onEnterWorkspace('inpaint')}>
-                  进入上传 ↗
-                </button>
-              </div>
-              <h3 className="step-title">拖入整季原片</h3>
-              <p className="step-desc">自动识别分辨率与高帧率省费项</p>
-            </div>
-
-            <div className="step-card" data-reveal style={{ '--stagger': '70ms' } as React.CSSProperties}>
-              <div className="step-visual visual-reticle" aria-hidden="true">
-                <div className="mini-frame">
-                  <div className="mini-bbox bbox-emerald">角标</div>
-                  <div className="mini-bbox bbox-amber">片头</div>
-                  <div className="mini-bbox bbox-cobalt">硬字幕</div>
-                  <div className="mini-scan-line"></div>
-                </div>
-              </div>
-              <div className="step-top">
-                <span className="step-num">02</span>
-                <button className="step-jump" onClick={() => onEnterWorkspace('annotate')}>
-                  区域标注 ↗
-                </button>
-              </div>
-              <h3 className="step-title">套用擦除模板</h3>
-              <p className="step-desc">全自动检测或按秒框选固定角标</p>
-            </div>
-
-            <div className="step-card" data-reveal style={{ '--stagger': '140ms' } as React.CSSProperties}>
-              <div className="step-visual visual-tracks" aria-hidden="true">
-                <div className="mini-track">
-                  <span className="track-lang">EN</span>
-                  <span className="track-bar track-cobalt"></span>
-                </div>
-                <div className="mini-track">
-                  <span className="track-lang">JA</span>
-                  <span className="track-bar track-emerald"></span>
-                </div>
-                <div className="mini-track">
-                  <span className="track-lang">KO</span>
-                  <span className="track-bar track-amber"></span>
-                </div>
-              </div>
-              <div className="step-top">
-                <span className="step-num">03</span>
-                <button className="step-jump" onClick={() => onEnterWorkspace('monitor')}>
-                  批次监控 ↗
-                </button>
-              </div>
-              <h3 className="step-title">并行渲染交付</h3>
-              <p className="step-desc">网页内滑块抽检并一键打包下载</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="section alt" id="features">
-        <div className="container">
-          <div className="section-head" data-reveal>
-            <h2 className="section-title">双引擎，同一工作台串联</h2>
-          </div>
-
-          <div className="features-stack">
-            <div className="feature-row" data-reveal>
-              <div className="feature-copy">
-                <span className="feature-tag tag-emerald">01 · 视频无痕修复</span>
-                <h3 className="feature-title">精准抹除角标、台标与硬字幕</h3>
-                <ul className="feature-points">
-                  <li>
-                    <span className="point-key">三档算力</span>
-                    <span className="point-val">极速 ¥0.50/分起，精准识别花体字与动态台标</span>
-                  </li>
-                  <li>
-                    <span className="point-key">时段框选</span>
-                    <span className="point-val">按秒控制生效区间，模板一键复用全季</span>
-                  </li>
-                  <li>
-                    <span className="point-key">字幕保护</span>
-                    <span className="point-val">只擦角标时自动避让底部台词区域</span>
-                  </li>
-                </ul>
-                <div>
-                  <button className="btn btn-ghost" onClick={() => onEnterWorkspace('inpaint')}>
-                    <span>新建修复任务</span>
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                      <path
-                        d="M3.5 8h9M8.5 4l4 4-4 4"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-
-              <div className="screen-showcase showcase-emerald">
-                <div className="showcase-bar">
-                  <div className="showcase-tabs">
-                    <button
-                      className={`showcase-tab ${inpaintTab === 'inpaint' ? 'active' : ''}`}
-                      onClick={() => setInpaintTab('inpaint')}
-                    >
-                      批量修复配置
-                    </button>
-                    <button
-                      className={`showcase-tab ${inpaintTab === 'annotate' ? 'active' : ''}`}
-                      onClick={() => setInpaintTab('annotate')}
-                    >
-                      区域时间轴标注
-                    </button>
-                  </div>
-                  <button className="stage-open-link" onClick={() => onEnterWorkspace(inpaintTab)}>
-                    体验界面 ↗
-                  </button>
-                </div>
-                <div className="showcase-frame">
-                  <img
-                    key={inpaintTab}
-                    className="showcase-img"
-                    src={inpaintTab === 'inpaint' ? '/assets/screens/screen-inpaint.png' : '/assets/screens/screen-annotate.png'}
-                    alt="净影视频修复工作台界面"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="feature-row reverse" data-reveal>
-              <div className="screen-showcase showcase-cobalt">
-                <div className="showcase-bar">
-                  <div className="showcase-tabs">
-                    <button
-                      className={`showcase-tab ${translateTab === 'result' ? 'active' : ''}`}
-                      onClick={() => setTranslateTab('result')}
-                    >
-                      多语成片交付
-                    </button>
-                    <button
-                      className={`showcase-tab ${translateTab === 'translate' ? 'active' : ''}`}
-                      onClick={() => setTranslateTab('translate')}
-                    >
-                      新建翻译任务
-                    </button>
-                  </div>
-                  <button
-                    className="stage-open-link"
-                    onClick={() => onEnterWorkspace(translateTab === 'result' ? 'translate-result' : 'translate')}
-                  >
-                    体验界面 ↗
-                  </button>
-                </div>
-                <div className="showcase-frame">
-                  <img
-                    key={translateTab}
-                    className="showcase-img"
-                    src={translateTab === 'result' ? '/assets/screens/screen-result.png' : '/assets/screens/screen-translate.png'}
-                    alt="净影多语成片结果界面"
-                  />
-                </div>
-                <div className="dub-interactive-dock">
-                  <div className="dub-dock-langs" role="tablist" aria-label="试看多语字幕">
-                    {DUB_SAMPLES.map((item, idx) => (
-                      <button
-                        key={item.code}
-                        className={`dub-lang-chip ${dubIdx === idx ? 'active' : ''}`}
-                        onClick={() => setDubIdx(idx)}
-                      >
-                        {item.code}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="dub-dock-preview" key={activeDub.code}>
-                    <span className="voice-bars bars-cobalt" aria-hidden="true">
-                      <i></i>
-                      <i></i>
-                      <i></i>
-                      <i></i>
-                    </span>
-                    <span className={`dub-dock-line ${activeDub.langClass}`}>{activeDub.line}</span>
-                    <span className="dub-dock-voice">{activeDub.voice}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="feature-copy">
-                <span className="feature-tag tag-cobalt">02 · 多语配音译制</span>
-                <h3 className="feature-title">1:1 复刻音色，一次提交多语出片</h3>
-                <ul className="feature-points">
-                  <li>
-                    <span className="point-key">声线节奏</span>
-                    <span className="point-val">保留说话人情绪与音色，动态对齐语速</span>
-                  </li>
-                  <li>
-                    <span className="point-key">字幕烧录</span>
-                    <span className="point-val">匹配语种字体，同步导出 SRT / ASS / VTT</span>
-                  </li>
-                  <li>
-                    <span className="point-key">母带复用</span>
-                    <span className="point-val">去水印底片全语种共用，不重复扣费</span>
-                  </li>
-                </ul>
-                <div>
-                  <button className="btn btn-ghost" onClick={() => onEnterWorkspace('translate')}>
-                    <span>新建翻译任务</span>
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                      <path
-                        d="M3.5 8h9M8.5 4l4 4-4 4"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="section" id="scenarios">
+      <section className="section alt" id="scenarios">
         <div className="container">
           <div className="section-head" data-reveal>
             <h2 className="section-title">适用场景</h2>
           </div>
 
           <div className="scenarios-strip" data-reveal>
-            <article className="scenario-col accent-emerald">
+            <article
+              className="scenario-col accent-emerald is-clickable"
+              onClick={() => {
+                applyPreset('drama');
+                document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
               <div className="scenario-top">
                 <span className="scenario-label">短剧出海</span>
                 <span className="scenario-badge">精准 + 高质量</span>
               </div>
               <p className="scenario-desc">批量擦除角标与硬字幕，多语配音直出海外版本</p>
+              <span className="scenario-calc-link">一键代入下方试算 ↗</span>
             </article>
 
-            <article className="scenario-col accent-cobalt">
+            <article
+              className="scenario-col accent-cobalt is-clickable"
+              onClick={() => {
+                applyPreset('course');
+                document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
               <div className="scenario-top">
                 <span className="scenario-label">课程内训</span>
                 <span className="scenario-badge">固定框 + 音色还原</span>
               </div>
               <p className="scenario-desc">支持 3–4 小时长视频去标与多语种标准字幕输出</p>
+              <span className="scenario-calc-link">一键代入下方试算 ↗</span>
             </article>
 
-            <article className="scenario-col accent-amber">
+            <article
+              className="scenario-col accent-amber is-clickable"
+              onClick={() => {
+                applyPreset('ads');
+                document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
               <div className="scenario-top">
                 <span className="scenario-label">跨境投放</span>
                 <span className="scenario-badge">极速 + 情感复刻</span>
               </div>
               <p className="scenario-desc">清洗爆款广告旧字幕与水印，快速裂变多国素材</p>
+              <span className="scenario-calc-link">一键代入下方试算 ↗</span>
             </article>
           </div>
         </div>
       </section>
 
-      <section className="section alt" id="pricing">
+      <section className="section" id="pricing">
         <div className="container">
-          <div className="section-head pricing-head" data-reveal>
-            <h2 className="section-title">纯按量计费</h2>
-            <p className="section-sub">修复与翻译独立计价，可单独使用或串联</p>
+          <div className="pricing-top-row" data-reveal>
+            <div className="section-head pricing-head">
+              <h2 className="section-title">纯按量计费</h2>
+              <p className="section-sub">修复与翻译独立计价，可单独使用或串联</p>
+            </div>
+
+            <div className="calc-preset-tabs" ref={presetTabsRef} role="tablist" aria-label="典型场景快捷试算预设">
+              <span className="calc-preset-pill" style={presetPillStyle} aria-hidden="true" />
+              {(
+                [
+                  ['custom', '自由配置'],
+                  ['drama', '短剧出海 · 60集'],
+                  ['ads', '跨境广告 · 10条'],
+                  ['course', '长视频课 · 4节'],
+                ] as const
+              ).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  role="tab"
+                  data-preset={key}
+                  aria-selected={activePreset === key}
+                  className={`calc-preset-btn ${activePreset === key ? 'active' : ''}`}
+                  onClick={() => applyPreset(key)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="calc-shell" data-reveal>
-            {/* 1. Shared Footage Duration Bar */}
             <div className="calc-footage-bar">
               <div className="footage-slider-item">
                 <div className="calc-label-row">
@@ -933,7 +977,10 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                   max={30}
                   value={minutesPerFile}
                   style={{ '--pct': `${minPct}%` } as React.CSSProperties}
-                  onChange={(e) => setMinutesPerFile(Number(e.target.value))}
+                  onChange={(e) => {
+                    setActivePreset('custom');
+                    setMinutesPerFile(Number(e.target.value));
+                  }}
                 />
               </div>
 
@@ -949,7 +996,10 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                   max={60}
                   value={fileCount}
                   style={{ '--pct': `${countPct}%` } as React.CSSProperties}
-                  onChange={(e) => setFileCount(Number(e.target.value))}
+                  onChange={(e) => {
+                    setActivePreset('custom');
+                    setFileCount(Number(e.target.value));
+                  }}
                 />
               </div>
 
@@ -959,9 +1009,7 @@ export function LandingPage({ onEnterWorkspace }: Props) {
               </div>
             </div>
 
-            {/* 2. Separated Inpaint & Translate Modules */}
             <div className="pricing-modules">
-              {/* Left Module: Video Inpaint */}
               <div className={`pricing-module module-inpaint ${inpaintEnabled ? '' : 'is-disabled'}`}>
                 <div className="module-head">
                   <div className="module-title-group">
@@ -976,7 +1024,10 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                     role="switch"
                     aria-checked={inpaintEnabled}
                     className={`module-switch switch-emerald ${inpaintEnabled ? 'on' : ''}`}
-                    onClick={() => setInpaintEnabled((v) => !v)}
+                    onClick={() => {
+                      setActivePreset('custom');
+                      setInpaintEnabled((v) => !v);
+                    }}
                   >
                     <span className="switch-track">
                       <span className="switch-thumb"></span>
@@ -986,7 +1037,7 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                 </div>
 
                 <div className="module-body">
-                  <div className="tier-options" role="radiogroup" aria-label="视频修复档位">
+                  <div className="tier-options" role="radiogroup">
                     {(
                       [
                         ['lite', '极速版', '常规中英字幕', '¥0.50'],
@@ -1003,6 +1054,7 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                           aria-checked={active}
                           className={`tier-option ${active ? 'active' : ''}`}
                           onClick={() => {
+                            setActivePreset('custom');
                             setInpaintEnabled(true);
                             setInpaintTier(k);
                           }}
@@ -1028,6 +1080,7 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                           type="button"
                           className={`calc-seg-btn ${resolution === '1080p' ? 'active' : ''}`}
                           onClick={() => {
+                            setActivePreset('custom');
                             setInpaintEnabled(true);
                             setResolution('1080p');
                           }}
@@ -1038,6 +1091,7 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                           type="button"
                           className={`calc-seg-btn ${resolution === '4k' ? 'active' : ''}`}
                           onClick={() => {
+                            setActivePreset('custom');
                             setInpaintEnabled(true);
                             setResolution('4k');
                           }}
@@ -1064,6 +1118,7 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                             type="button"
                             className={`calc-seg-btn ${fpsTier === fps ? 'active' : ''}`}
                             onClick={() => {
+                              setActivePreset('custom');
                               setInpaintEnabled(true);
                               setFpsTier(fps);
                             }}
@@ -1086,7 +1141,6 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                 </div>
               </div>
 
-              {/* Right Module: Multi-language Translation */}
               <div className={`pricing-module module-translate ${translateEnabled ? '' : 'is-disabled'}`}>
                 <div className="module-head">
                   <div className="module-title-group">
@@ -1101,7 +1155,10 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                     role="switch"
                     aria-checked={translateEnabled}
                     className={`module-switch switch-cobalt ${translateEnabled ? 'on' : ''}`}
-                    onClick={() => setTranslateEnabled((v) => !v)}
+                    onClick={() => {
+                      setActivePreset('custom');
+                      setTranslateEnabled((v) => !v);
+                    }}
                   >
                     <span className="switch-track">
                       <span className="switch-thumb"></span>
@@ -1111,7 +1168,7 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                 </div>
 
                 <div className="module-body">
-                  <div className="tier-options" role="radiogroup" aria-label="多语翻译档位">
+                  <div className="tier-options" role="radiogroup">
                     {(
                       [
                         ['standard', '标准配音', '音色 / 情感复刻 · 含字幕导出', '¥1.50'],
@@ -1127,6 +1184,7 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                           aria-checked={active}
                           className={`tier-option ${active ? 'active' : ''}`}
                           onClick={() => {
+                            setActivePreset('custom');
                             setTranslateEnabled(true);
                             setTranslateMode(k);
                           }}
@@ -1155,19 +1213,20 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                       disabled={!translateEnabled}
                       value={langCount}
                       style={{ '--pct': `${langPct}%` } as React.CSSProperties}
-                      onChange={(e) => setLangCount(Number(e.target.value))}
+                      onChange={(e) => {
+                        setActivePreset('custom');
+                        setLangCount(Number(e.target.value));
+                      }}
                     />
                   </div>
 
-                  <div className="module-hint-bar">
-                    与分辨率、帧率无关 · 串联去水印仅修 1 次母带
-                  </div>
+                  <div className="module-hint-bar">与分辨率、帧率无关 · 串联去水印仅修 1 次母带</div>
                 </div>
 
                 <div className="module-subtotal">
                   <div className="subtotal-expr mono">
                     {translateEnabled
-                      ? `${totalInputMin}分 × ${langCount}语种 × ¥${transUnit.toFixed(2)}`
+                      ? `${totalInputMin}分 × ${langCount} 语种 × ¥${transUnit.toFixed(2)}`
                       : '已跳过多语翻译'}
                   </div>
                   <div className="subtotal-val mono">¥{animatedTrans.toFixed(2)}</div>
@@ -1175,7 +1234,6 @@ export function LandingPage({ onEnterWorkspace }: Props) {
               </div>
             </div>
 
-            {/* 3. Unified Total Summary Bar */}
             <div className="calc-summary-bar">
               <div className="summary-breakdown">
                 <span className="summary-chip">
@@ -1205,11 +1263,7 @@ export function LandingPage({ onEnterWorkspace }: Props) {
                     onEnterWorkspace(translateEnabled ? 'translate' : inpaintEnabled ? 'inpaint' : 'overview')
                   }
                 >
-                  {translateEnabled
-                    ? '前往配置多语翻译'
-                    : inpaintEnabled
-                      ? '前往批量去水印'
-                      : '进入工作台'}
+                  {translateEnabled ? '前往配置多语翻译' : inpaintEnabled ? '前往批量去水印' : '进入工作台'}
                 </button>
               </div>
             </div>
@@ -1217,7 +1271,7 @@ export function LandingPage({ onEnterWorkspace }: Props) {
         </div>
       </section>
 
-      <section className="section" id="faq">
+      <section className="section alt" id="faq">
         <div className="container faq-layout" data-reveal>
           <div className="faq-intro">
             <h2 className="section-title">常见问题</h2>
@@ -1289,13 +1343,31 @@ export function LandingPage({ onEnterWorkspace }: Props) {
 
           <div className="footer-links">
             <button onClick={() => onEnterWorkspace('overview')}>任务总览</button>
-            <button onClick={() => onEnterWorkspace('inpaint')}>去水印修复</button>
+            <button onClick={() => onEnterWorkspace('inpaint')}>批量去水印</button>
             <button onClick={() => onEnterWorkspace('translate')}>多语翻译</button>
-            <button onClick={() => onEnterWorkspace('annotate')}>区域模板</button>
+            <button onClick={() => onEnterWorkspace('annotate')}>区域标注</button>
             <button onClick={() => onEnterWorkspace('subtitle-style')}>字幕样式</button>
           </div>
         </div>
       </footer>
+
+      <button
+        type="button"
+        className={`back-to-top ${showBackTop ? 'is-on' : ''}`}
+        aria-label="回到顶部"
+        onClick={scrollToTop}
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path
+            d="M8 12.5V3.5M4.5 7L8 3.5 11.5 7"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+        <span>回到顶部</span>
+      </button>
     </div>
   );
 }
