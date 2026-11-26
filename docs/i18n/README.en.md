@@ -2,9 +2,9 @@
 
 <img src="../screenshots/logo.svg" alt="CleanFrame Logo" width="84" height="84" />
 
-# CleanFrame (净影) — AI Video Watermark & Subtitle Remover
+# CleanFrame (净影) — AI Video Watermark Remover & Hardcoded Subtitle Remover
 
-**Open-Source AI Video Watermark Remover, Hardcoded Subtitle Remover (Video Inpainting) & 31-Language Video Translation / Voice-Cloning Dubbing Studio**
+**Open-Source AI Video Watermark Remover — remove watermark from video, erase logos and hardcoded subtitles via video inpainting. Includes 31-language video translation & voice-cloned dubbing in one self-hosted studio.**
 
 [![Official Cloud SaaS](https://img.shields.io/badge/Official_Cloud_SaaS-erasevid.com-10B981?style=flat-square&logo=cloudflare&logoColor=white)](https://erasevid.com/?utm_source=github&utm_medium=readme_en)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
@@ -48,6 +48,8 @@
 ## Overview
 
 **CleanFrame (净影)** is a production-grade, open-source batch video post-production and localization studio built for **short-drama distributors, cross-border e-commerce sellers, MCN agencies, video editors, online educators, and independent creators**. Powered by **FastAPI + React 18 + TypeScript** and spatiotemporal AI video operators (`las_video_inpaint_pro v1` for video watermark/subtitle inpainting and `las_video_translate v1` for 31-language voice-cloned dubbing & subtitle burn-in), CleanFrame unifies **batch video upload, normalized bounding-box annotation, seamless watermark & hardcoded subtitle removal (TikTok / YouTube / Reels / Douyin corner logos, Sora / Runway / Kling / Veo AI video watermarks, TV station bugs, burned-in hardsubs), and multi-language video translation** into a single dark-mode studio workspace.
+
+> **Also searched as**: *video watermark remover*, *AI video watermark remover*, *remove watermark from video*, *video watermark removal*, *hardcoded subtitle remover*, *video inpainting*, *Sora / TikTok watermark remover*.
 
 > **Zero-Key Instant Preview (`Local Mock Mode`)**: No cloud API keys are required to try CleanFrame. Clone the repository and run `./start.sh` to launch the full-featured **Local Mock Simulator** out of the box—complete with interactive bounding-box annotation, before/after wipe slider, multi-language subtitle alignment, batch queue controls, and live cost estimation. Whenever you are ready for production, enter your Volcengine LAS & TOS credentials in `/workspace#settings` to hot-switch into `Live` mode without restarting or editing code.
 

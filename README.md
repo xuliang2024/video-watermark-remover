@@ -6,7 +6,7 @@
 
 **开源 AI 视频去水印、视频硬字幕无痕擦除（去字幕）与 31 语种视频翻译配音烧录一体化工作台**
 
-*Open-Source AI Video Watermark Remover, Hardcoded Subtitle Remover (Video Inpainting) & 31-Language Video Translation / Voice-Cloning Dubbing Studio*
+*Open-Source AI Video Watermark Remover — remove watermark from video, erase logos and hardcoded subtitles with video inpainting, plus 31-language video translation & dubbing in one self-hosted studio*
 
 [![Official Cloud SaaS](https://img.shields.io/badge/Official_Cloud_SaaS-erasevid.com-10B981?style=flat-square&logo=cloudflare&logoColor=white)](https://erasevid.com/?utm_source=github&utm_medium=readme_zh)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
