@@ -27,7 +27,6 @@
 </p>
 
 <p align="center">
-  <a href="https://erasevid.com/?utm_source=github&utm_medium=readme_ja"><strong>🚀 公式クラウド版（EraseVid.com・環境構築不要）</strong></a> ·
   <a href="#プロジェクト概要">概要</a> ·
   <a href="#主な機能">主な機能</a> ·
   <a href="#画面プレビュー">画面プレビュー</a> ·
@@ -39,7 +38,10 @@
   <a href="#よくある質問faq">FAQ</a>
 </p>
 
-> **サーバー構築やクラウドAPIキーの取得なしで今すぐ使いたいですか？** 公式マネージドクラウド版 👉 **[https://erasevid.com](https://erasevid.com/?utm_source=github&utm_medium=readme_ja)** なら、ブラウザから動画をアップロードするだけですぐに一括処理可能（チーム共同作業・従量課金・失敗時自動返金・新規登録で無料体験クレジット進呈）。
+> **2 つの使い方、同じコードベース**
+>
+> - **セルフホスト**：リポジトリを取得し `docker compose up -d`（または `./start.sh`）で起動します。Apache-2.0、素材と完成物はあなたのサーバー内に留まります。火山引擎 LAS / TOS の認証情報はご自身で用意してください。
+> - **ホスト版**：[erasevid.com](https://erasevid.com/?utm_source=github&utm_medium=readme_ja) —— サーバー不要、プラットフォーム一括課金、従量制。失敗したタスクは自動返金されます。
 
 <img src="../screenshots/01-hero-landing.png" alt="CleanFrame ランディングページと透かし消去ビフォーアフター比較" width="100%" />
 
@@ -196,6 +198,18 @@ flowchart TB
 ---
 
 ## 5分クイックスタート
+
+### Docker で起動（推奨・依存なし）
+
+Docker と Docker Compose があれば動きます。Python・Node.js・FFmpeg を個別にインストールする必要はありません（イメージに同梱）。
+
+```bash
+git clone https://github.com/xuliang2024/video-watermark-remover.git
+cd video-watermark-remover
+docker compose up -d
+```
+
+データはホストの `./data` に永続化されます。詳細は [README.en.md](./README.en.md#option-1-docker-compose-recommended-zero-dependencies) を参照してください。
 
 ### 動作要件
 - **Python**: `3.10` 以上（`3.11+` 推奨）

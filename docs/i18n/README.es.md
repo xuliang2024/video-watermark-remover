@@ -25,7 +25,6 @@
 </p>
 
 <p align="center">
-  <a href="https://erasevid.com/?utm_source=github&utm_medium=readme_es"><strong>🚀 Estudio Oficial en la Nube (EraseVid.com · Sin Instalación)</strong></a> ·
   <a href="#descripción-general">Descripción</a> ·
   <a href="#características-principales">Características</a> ·
   <a href="#galería-de-interfaz-y-resultados">Galería</a> ·
@@ -37,7 +36,10 @@
   <a href="#preguntas-frecuentes-faq">FAQ</a>
 </p>
 
-> **¿Quieres procesar videos al instante sin servidores propios ni claves API?** Usa la plataforma oficial en la nube 👉 **[https://erasevid.com](https://erasevid.com/?utm_source=github&utm_medium=readme_es)** — sin configuración técnica, espacios colaborativos por equipo, pago por uso con reembolso automático ante fallos y saldo de prueba gratis al registrarte.
+> **Dos formas de usarlo, el mismo código**
+>
+> - **Autoalojado**: clona el repositorio y ejecuta `docker compose up -d` (o `./start.sh`). Apache-2.0, el material no sale de tu servidor. Necesitas tus propias credenciales de Volcengine LAS / TOS.
+> - **En la nube**: [erasevid.com](https://erasevid.com/?utm_source=github&utm_medium=readme_es) —— sin servidor, facturación por uso a cargo de la plataforma. Las tareas fallidas se reembolsan automáticamente.
 
 <img src="../screenshots/01-hero-landing.png" alt="Página principal de CleanFrame y comparador antes/después" width="100%" />
 
@@ -188,6 +190,18 @@ flowchart TB
 ---
 
 ## Inicio Rápido en 5 Minutos
+
+### Ejecutar con Docker (recomendado, sin dependencias)
+
+Solo necesitas Docker y Docker Compose. No hace falta instalar Python, Node.js ni FFmpeg: la imagen ya los incluye.
+
+```bash
+git clone https://github.com/xuliang2024/video-watermark-remover.git
+cd video-watermark-remover
+docker compose up -d
+```
+
+Los datos se guardan en `./data` del host. Consulta [README.en.md](./README.en.md#option-1-docker-compose-recommended-zero-dependencies) para más detalles.
 
 ```bash
 # 1. Clonar el repositorio

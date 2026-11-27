@@ -27,7 +27,6 @@
 </p>
 
 <p align="center">
-  <a href="https://erasevid.com/?utm_source=github&utm_medium=readme_zh"><strong>🚀 在线商业云工作台（EraseVid.com · 免部署即用）</strong></a> ·
   <a href="#项目简介">项目简介</a> ·
   <a href="#核心能力亮点">核心亮点</a> ·
   <a href="#界面与效果预览">界面预览</a> ·
@@ -39,7 +38,10 @@
   <a href="#常见问题faq">FAQ</a>
 </p>
 
-> **不想自备服务器或申请配置云厂商 API 密钥？** 立即访问官方托管云工作台 👉 **[https://erasevid.com](https://erasevid.com/?utm_source=github&utm_medium=readme_zh)** —— 零运维开箱即用、团队多成员协作、按量透明计费（异常任务自动全额退费），注册新团队即赠体验金。
+> **两种用法，同一套代码**
+>
+> - **自己部署**：克隆本仓库后 `docker compose up -d`（或 `./start.sh`），Apache-2.0 开源，素材与成片不出内网；需自备火山引擎 LAS / TOS 凭证。
+> - **托管云版**：[erasevid.com](https://erasevid.com/?utm_source=github&utm_medium=readme_zh) —— 免服务器、平台统付、按量计费，异常任务自动全额退费。适合不想维护凭证与算力的情况。
 
 <img src="./docs/screenshots/01-hero-landing.png" alt="净影 CleanFrame 产品首页与去水印前后对比舞台" width="100%" />
 
@@ -254,7 +256,30 @@ video-watermark-remover/
 
 ## 5 分钟快速开始
 
-### 环境前置要求
+### 方式一：Docker Compose 启动（推荐，零依赖）
+
+只需要 Docker 与 Docker Compose，不必在本机安装 Python、Node 或 FFmpeg —— 镜像内已经包含全部依赖。
+
+```bash
+# 1. 克隆仓库
+git clone https://github.com/xuliang2024/video-watermark-remover.git
+cd video-watermark-remover
+
+# 2. 构建并后台启动（首次构建约 3-5 分钟）
+docker compose up -d
+
+# 3. 确认服务健康
+docker compose ps
+curl -s http://127.0.0.1:8000/api/health
+```
+
+浏览器打开 `http://127.0.0.1:8000/` 即可进入工作台。
+
+- **数据持久化**：SQLite 数据库、上传素材、成片与缩略图都在宿主机的 `./data` 目录，`docker compose down` 不会丢数据。
+- **凭证保存**：在「系统设置」页填写的火山引擎 LAS / TOS 凭证写入数据库，重启容器后自动恢复，不需要编辑 `.env`。
+- **升级**：`git pull && docker compose up -d --build`。
+
+### 环境前置要求（仅源码方式需要）
 
 - **Python**：`3.10` 及以上（推荐 `3.11+`）
 - **Node.js**：`18.0` 及以上（含 `npm`）
@@ -263,7 +288,7 @@ video-watermark-remover/
   - Ubuntu / Debian：`sudo apt update && sudo apt install -y ffmpeg`
   - Windows：`winget install Gyan.FFmpeg`
 
-### 方式一：一键脚本启动（推荐，单端口生产模式）
+### 方式二：一键脚本启动（单端口生产模式）
 
 无需配置任何环境变量即可直接启动（默认以 `auto` 模式运行，未检测到密钥时自动启用本地全链路 `mock` 仿真）：
 
@@ -290,7 +315,7 @@ npm --prefix frontend install
 - **系统环境设置页**：`http://127.0.0.1:8000/workspace#settings`
 - **交互式 OpenAPI 文档（Swagger）**：`http://127.0.0.1:8000/docs`
 
-### 方式二：前后端分离热更新开发模式
+### 方式三：前后端分离热更新开发模式
 
 适合二次开发前端 UI 或调试后端算子逻辑：
 
@@ -303,7 +328,7 @@ uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000 --reload
 npm --prefix frontend run dev
 ```
 
-### 方式三：接入火山引擎 LAS + TOS 真实算子（Live 生产模式）
+### 方式四：接入火山引擎 LAS + TOS 真实算子（Live 生产模式）
 
 支持**网页可视化配置（推荐）**或**手动编辑 `.env` 文件**两种方式：
 

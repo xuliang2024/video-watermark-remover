@@ -27,7 +27,6 @@
 </p>
 
 <p align="center">
-  <a href="https://erasevid.com/?utm_source=github&utm_medium=readme_ko"><strong>🚀 공식 클라우드 스튜디오 (EraseVid.com · 설치 없이 즉시 사용)</strong></a> ·
   <a href="#프로젝트-소개">소개</a> ·
   <a href="#핵심-기능">핵심 기능</a> ·
   <a href="#화면-및-결과-미리보기">화면 미리보기</a> ·
@@ -39,7 +38,10 @@
   <a href="#자주-묻는-질문-faq">FAQ</a>
 </p>
 
-> **직접 서버를 구축하거나 클라우드 API 키를 발급받지 않고 바로 사용하고 싶으신가요?** 공식 호스팅 클라우드 워크스페이스 👉 **[https://erasevid.com](https://erasevid.com/?utm_source=github&utm_medium=readme_ko)** 에서 설치 없이 웹 업로드만으로 즉시 일괄 작업하세요 (팀 협업 · 종량제 과금 및 실패 시 자동 전액 환불 · 신규 가입 무료 크레딧 제공).
+> **두 가지 사용 방식, 같은 코드베이스**
+>
+> - **셀프 호스팅**: 저장소를 받은 뒤 `docker compose up -d`(또는 `./start.sh`)로 실행합니다. Apache-2.0, 원본과 결과물이 서버 밖으로 나가지 않습니다. Volcengine LAS / TOS 자격 증명은 직접 준비해야 합니다.
+> - **호스팅 버전**: [erasevid.com](https://erasevid.com/?utm_source=github&utm_medium=readme_ko) —— 서버 불필요, 플랫폼 일괄 과금, 사용량 기반. 실패한 작업은 자동 환불됩니다.
 
 <img src="../screenshots/01-hero-landing.png" alt="CleanFrame 랜딩 페이지 및 워터마크 제거 전후 비교 스테이지" width="100%" />
 
@@ -196,6 +198,18 @@ flowchart TB
 ---
 
 ## 5분 빠른 시작
+
+### Docker로 실행 (권장, 의존성 없음)
+
+Docker와 Docker Compose만 있으면 됩니다. Python·Node.js·FFmpeg를 따로 설치할 필요가 없습니다(이미지에 포함).
+
+```bash
+git clone https://github.com/xuliang2024/video-watermark-remover.git
+cd video-watermark-remover
+docker compose up -d
+```
+
+데이터는 호스트의 `./data`에 저장됩니다. 자세한 내용은 [README.en.md](./README.en.md#option-1-docker-compose-recommended-zero-dependencies)를 참고하세요.
 
 ```bash
 # 1. 저장소 클론

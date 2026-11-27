@@ -25,7 +25,6 @@
 </p>
 
 <p align="center">
-  <a href="https://erasevid.com/?utm_source=github&utm_medium=readme_ru"><strong>🚀 Облачная SaaS-студия (EraseVid.com · Без установки)</strong></a> ·
   <a href="#о-проекте">О проекте</a> ·
   <a href="#ключевые-возможности">Возможности</a> ·
   <a href="#галерея-интерфейса-и-результатов">Скриншоты</a> ·
@@ -37,7 +36,10 @@
   <a href="#частые-вопросы-faq">FAQ</a>
 </p>
 
-> **Хотите работать сразу без настройки серверов и облачных API-ключей?** Переходите в официальную облачную студию 👉 **[https://erasevid.com](https://erasevid.com/?utm_source=github&utm_medium=readme_ru)** — пакетная загрузка в браузере, командный доступ, оплата по факту с автовозвратом при сбоях и приветственный бонус при регистрации.
+> **Два способа запуска, одна кодовая база**
+>
+> - **Свой сервер**: склонируйте репозиторий и выполните `docker compose up -d` (или `./start.sh`). Apache-2.0, исходники и результаты не покидают ваш сервер. Потребуются собственные ключи Volcengine LAS / TOS.
+> - **Облачная версия**: [erasevid.com](https://erasevid.com/?utm_source=github&utm_medium=readme_ru) —— без сервера, оплата по факту на стороне платформы. Неудачные задачи возвращаются автоматически.
 
 <img src="../screenshots/01-hero-landing.png" alt="Главная страница CleanFrame и интерактивное сравнение до/после" width="100%" />
 
@@ -188,6 +190,18 @@ flowchart TB
 ---
 
 ## Быстрый старт за 5 минут
+
+### Запуск в Docker (рекомендуется, без зависимостей)
+
+Достаточно Docker и Docker Compose. Python, Node.js и FFmpeg устанавливать не нужно — они уже внутри образа.
+
+```bash
+git clone https://github.com/xuliang2024/video-watermark-remover.git
+cd video-watermark-remover
+docker compose up -d
+```
+
+Данные сохраняются в `./data` на хосте. Подробности — в [README.en.md](./README.en.md#option-1-docker-compose-recommended-zero-dependencies).
 
 ```bash
 # 1. Клонировать репозиторий

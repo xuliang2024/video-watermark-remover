@@ -25,7 +25,6 @@
 </p>
 
 <p align="center">
-  <a href="https://erasevid.com/?utm_source=github&utm_medium=readme_en"><strong>🚀 Official Cloud Studio (EraseVid.com · Zero-Setup SaaS)</strong></a> ·
   <a href="#overview">Overview</a> ·
   <a href="#key-features">Key Features</a> ·
   <a href="#live-ui--preview-gallery">Preview Gallery</a> ·
@@ -37,7 +36,10 @@
   <a href="#faq">FAQ</a>
 </p>
 
-> **Want instant results without self-hosting or managing cloud API keys?** Launch the official hosted cloud workspace at **[https://erasevid.com](https://erasevid.com/?utm_source=github&utm_medium=readme_en)** — zero infrastructure setup, multi-member team workspaces, pay-as-you-go billing with automatic failure refunds, and free trial credits upon sign-up.
+> **Two ways to run it, same codebase**
+>
+> - **Self-hosted**: clone the repo and run `docker compose up -d` (or `./start.sh`). Apache-2.0, footage never leaves your server. Requires your own Volcengine LAS / TOS credentials.
+> - **Hosted**: [erasevid.com](https://erasevid.com/?utm_source=github&utm_medium=readme_en) — no server to run, metered billing, failed tasks refunded automatically. For teams that would rather not manage credentials and compute.
 
 <img src="../screenshots/01-hero-landing.png" alt="CleanFrame Landing Page & Before/After Watermark Erasure Stage" width="100%" />
 
@@ -201,7 +203,26 @@ flowchart TB
 
 ## 5-Minute Quick Start
 
-### Prerequisites
+### Option 1: Docker Compose (Recommended, Zero Dependencies)
+
+All you need is Docker with Compose — no local Python, Node, or FFmpeg install, since the image ships with them.
+
+```bash
+# 1. Clone
+git clone https://github.com/xuliang2024/video-watermark-remover.git
+cd video-watermark-remover
+
+# 2. Build and start in the background (first build takes ~3-5 min)
+docker compose up -d
+
+# 3. Confirm the service is healthy
+docker compose ps
+curl -s http://127.0.0.1:8000/api/health
+```
+
+Open `http://127.0.0.1:8000/`. The SQLite database, uploaded footage, thumbnails and rendered outputs live in `./data` on the host, so `docker compose down` does not lose them. Credentials entered in the studio's Settings page are stored in the database and restored on restart — no `.env` editing required. To upgrade: `git pull && docker compose up -d --build`.
+
+### Prerequisites (source install only)
 
 - **Python**: `3.10+` (`3.11+` recommended)
 - **Node.js**: `18.0+` (with `npm`)
@@ -210,7 +231,7 @@ flowchart TB
   - Ubuntu / Debian: `sudo apt update && sudo apt install -y ffmpeg`
   - Windows: `winget install Gyan.FFmpeg`
 
-### Option 1: One-Click Production Launch (Recommended)
+### Option 2: One-Click Production Launch
 
 Runs both the compiled React SPA and FastAPI backend on port `8000` (defaults to `auto` mode, activating the local Mock simulator until cloud keys are configured):
 
@@ -237,7 +258,7 @@ Open in your browser:
 - **System Settings**: `http://127.0.0.1:8000/workspace#settings`
 - **Swagger OpenAPI Docs**: `http://127.0.0.1:8000/docs`
 
-### Option 2: Split Frontend / Backend Hot-Reload Development
+### Option 3: Split Frontend / Backend Hot-Reload Development
 
 ```bash
 # Terminal 1: FastAPI backend with auto-reload (:8000)
@@ -248,7 +269,7 @@ uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000 --reload
 npm --prefix frontend run dev
 ```
 
-### Option 3: Connect Live Volcengine LAS + TOS Operators
+### Option 4: Connect Live Volcengine LAS + TOS Operators
 
 1. **Via Web UI (Recommended, zero-downtime hot reload)**:
    - Navigate to `http://127.0.0.1:8000/workspace#settings`
