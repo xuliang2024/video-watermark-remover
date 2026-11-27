@@ -43,6 +43,10 @@
 
 <img src="../screenshots/01-hero-landing.png" alt="CleanFrame Landing Page & Before/After Watermark Erasure Stage" width="100%" />
 
+<p align="center">
+  🚀 <strong>No setup?</strong> <a href="https://erasevid.com/?lang=en&utm_source=github&utm_medium=readme_en&utm_content=hero"><strong>Try EraseVid online</strong></a> · <a href="https://erasevid.com/cases?lang=en&utm_source=github&utm_medium=readme_en&utm_content=hero">11 real before/after cases</a> · <a href="https://erasevid.com/workspace?lang=en&utm_source=github&utm_medium=readme_en&utm_content=hero">Open the studio</a>
+</p>
+
 </div>
 
 ---
@@ -201,7 +205,30 @@ flowchart TB
 
 ---
 
+## Try the Hosted Version (No Setup)
+
+If you just want to **clean a video right now** — no Docker, no Volcengine LAS / TOS account to apply for — use **[EraseVid Hosted](https://erasevid.com/?lang=en&utm_source=github&utm_medium=readme_en&utm_content=section)**. It is built on the same codebase and the same AI operators as this repository: sign up, then upload, annotate watermarks and export batches straight from your browser.
+
+| | Self-hosted (this repo) | [EraseVid Hosted](https://erasevid.com/?lang=en&utm_source=github&utm_medium=readme_en&utm_content=section) |
+| :--- | :--- | :--- |
+| Setup | `docker compose up -d` or `./start.sh` | Nothing to install — works in the browser |
+| Cloud credentials | Your own Volcengine LAS / TOS keys | Covered by the platform, nothing to apply for |
+| Billing | Settled directly with your cloud provider | Pay as you go; failed tasks refunded automatically |
+| Data | Footage and outputs stay on your server | Uploaded to the platform for processing |
+| Best for | Custom development, intranet compliance, data locality | Shipping videos today without maintaining credentials or compute |
+
+- 👉 **[Sign up free and process a video](https://erasevid.com/?lang=en&utm_source=github&utm_medium=readme_en&utm_content=section)**
+- 🎬 **[Browse 11 real case studies with before/after clips](https://erasevid.com/cases?lang=en&utm_source=github&utm_medium=readme_en&utm_content=section)**
+- 🖥️ **[Open the online studio](https://erasevid.com/workspace?lang=en&utm_source=github&utm_medium=readme_en&utm_content=section)** (requires sign-in)
+- 💬 [Report an issue or request a feature](https://github.com/xuliang2024/video-watermark-remover/issues)
+
+> Want to see results before reading the code? Start with the [case studies](https://erasevid.com/cases?lang=en&utm_source=github&utm_medium=readme_en&utm_content=section); the self-hosted setup options follow below.
+
+---
+
 ## 5-Minute Quick Start
+
+> All four options below are for **self-hosting** the open-source edition. Pick whichever fits your environment.
 
 ### Option 1: Docker Compose (Recommended, Zero Dependencies)
 
@@ -380,6 +407,9 @@ Either pick the **"Logo Only · Protect Subtitles"** preset (`subtitle_protect=t
 **Q4: Which types of video watermarks and burned-in subtitles can CleanFrame remove?**
 CleanFrame removes **social & short-video platform watermarks** (TikTok, YouTube Shorts, Instagram Reels, Douyin, Kuaishou), **AI-generated video stamps** (OpenAI Sora, Runway, Kling, Veo), **broadcast TV station logos & scrolling tickers**, and **hardcoded / burned-in subtitles (hardsubs)** via spatiotemporal AI video inpainting—without cropping frames or degrading original audio.
 
+**Q6: Is there a hosted version if I would rather not self-host?**
+Yes. [EraseVid Hosted](https://erasevid.com/?lang=en&utm_source=github&utm_medium=readme_en&utm_content=faq) runs on the same codebase and AI operators, needs no deployment and no cloud credentials of your own — sign up and start uploading. It is pay-as-you-go and failed tasks are refunded automatically. Browse the [real case studies](https://erasevid.com/cases?lang=en&utm_source=github&utm_medium=readme_en&utm_content=faq) to see the output quality first; use this repository when you need data locality or want to extend the code.
+
 ---
 
 ## Common Use Cases
@@ -393,6 +423,8 @@ CleanFrame removes **social & short-video platform watermarks** (TikTok, YouTube
 <div align="center">
 
 If **CleanFrame** helps streamline your video cleaning or global localization workflow, please consider giving the repository a **Star**!
+
+[EraseVid Hosted](https://erasevid.com/?lang=en&utm_source=github&utm_medium=readme_en&utm_content=footer) · [Real case studies](https://erasevid.com/cases?lang=en&utm_source=github&utm_medium=readme_en&utm_content=footer) · [Online studio](https://erasevid.com/workspace?lang=en&utm_source=github&utm_medium=readme_en&utm_content=footer) · [GitHub Issues](https://github.com/xuliang2024/video-watermark-remover/issues)
 
 **[Back to Top](#cleanframe-净影--ai-video-watermark--subtitle-remover)**
 

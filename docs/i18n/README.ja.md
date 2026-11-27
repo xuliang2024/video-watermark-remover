@@ -45,6 +45,10 @@
 
 <img src="../screenshots/01-hero-landing.png" alt="CleanFrame ランディングページと透かし消去ビフォーアフター比較" width="100%" />
 
+<p align="center">
+  🚀 <strong>デプロイ不要で使いたい方へ</strong> <a href="https://erasevid.com/?lang=ja&utm_source=github&utm_medium=readme_ja&utm_content=hero"><strong>EraseVid オンライン版を試す</strong></a> · <a href="https://erasevid.com/cases?lang=ja&utm_source=github&utm_medium=readme_ja&utm_content=hero">11 件の実際の事例</a> · <a href="https://erasevid.com/workspace?lang=ja&utm_source=github&utm_medium=readme_ja&utm_content=hero">オンラインスタジオ</a>
+</p>
+
 </div>
 
 ---
@@ -197,7 +201,28 @@ flowchart TB
 
 ---
 
+## オンライン版：デプロイ不要、登録してすぐ利用
+
+Docker の導入や火山引擎 LAS / TOS の認証情報取得をせずに**今すぐ動画を処理したい**場合は、**[EraseVid オンライン版](https://erasevid.com/?lang=ja&utm_source=github&utm_medium=readme_ja&utm_content=section)** をご利用ください。オープンソース版と同じコードベース・同じ AI 演算子で動作し、登録後すぐにブラウザから動画のアップロード、透かしの範囲指定、一括出力ができます。
+
+| | セルフホスト（本リポジトリ） | [EraseVid オンライン版](https://erasevid.com/?lang=ja&utm_source=github&utm_medium=readme_ja&utm_content=section) |
+| :--- | :--- | :--- |
+| 導入 | `docker compose up -d` または `./start.sh` | インストール不要、ブラウザで即利用 |
+| 認証情報 | 自身で LAS / TOS を用意 | プラットフォーム側で用意、申請不要 |
+| 課金 | クラウド事業者への直接支払い | 従量課金、失敗タスクは自動全額返金 |
+| データ | 素材と成果物は自サーバー内に保持 | 処理のためプラットフォームへアップロード |
+
+- 👉 **[無料登録して動画を処理する](https://erasevid.com/?lang=ja&utm_source=github&utm_medium=readme_ja&utm_content=section)**
+- 🎬 **[修正前後を比較できる 11 件の実際の事例を見る](https://erasevid.com/cases?lang=ja&utm_source=github&utm_medium=readme_ja&utm_content=section)**
+- 🖥️ **[オンラインスタジオを開く](https://erasevid.com/workspace?lang=ja&utm_source=github&utm_medium=readme_ja&utm_content=section)**（ログインが必要です）
+
+> まず効果を確認したい方は [事例一覧](https://erasevid.com/cases?lang=ja&utm_source=github&utm_medium=readme_ja&utm_content=section) からどうぞ。以下ではセルフホストの導入手順を説明します。
+
+---
+
 ## 5分クイックスタート
+
+> 以下の 4 つの方法はいずれも **オープンソース版のセルフホスト** です。環境に合うものを選んでください。
 
 ### Docker で起動（推奨・依存なし）
 
@@ -306,11 +331,16 @@ npm --prefix frontend run build
 **Q2：本編の字幕を消さずに右上のロゴだけ消すには？**
 「ロゴのみ消去・字幕保護」プリセット（`subtitle_protect=true`）を選ぶか、「領域アノテーション」画面でロゴ部分だけを固定枠で囲んでテンプレート適用してください。
 
+**Q6：自分でデプロイせずに使えるオンライン版はありますか？**
+はい。[EraseVid オンライン版](https://erasevid.com/?lang=ja&utm_source=github&utm_medium=readme_ja&utm_content=faq) は本リポジトリと同じコードベース・同じ演算子で動作し、デプロイもクラウド認証情報も不要です。登録後すぐに動画を処理でき、従量課金・失敗タスク自動全額返金です。仕上がりは [実際の事例](https://erasevid.com/cases?lang=ja&utm_source=github&utm_medium=readme_ja&utm_content=faq) で先に確認できます。データを自社管理したい場合やコードを拡張したい場合は本リポジトリをご利用ください。
+
 ---
 
 <div align="center">
 
 **CleanFrame** がお役に立ちましたら、ぜひ右上の **Star** で応援をお願いします！
+
+[EraseVid オンライン版](https://erasevid.com/?lang=ja&utm_source=github&utm_medium=readme_ja&utm_content=footer) · [実際の事例](https://erasevid.com/cases?lang=ja&utm_source=github&utm_medium=readme_ja&utm_content=footer) · [オンラインスタジオ](https://erasevid.com/workspace?lang=ja&utm_source=github&utm_medium=readme_ja&utm_content=footer) · [GitHub Issues](https://github.com/xuliang2024/video-watermark-remover/issues)
 
 **[トップへ戻る](#浄影-cleanframe)**
 

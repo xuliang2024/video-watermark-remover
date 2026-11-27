@@ -43,6 +43,10 @@
 
 <img src="../screenshots/01-hero-landing.png" alt="Главная страница CleanFrame и интерактивное сравнение до/после" width="100%" />
 
+<p align="center">
+  🚀 <strong>Не хотите разворачивать?</strong> <a href="https://erasevid.com/?lang=ru&utm_source=github&utm_medium=readme_ru&utm_content=hero"><strong>Попробовать EraseVid онлайн</strong></a> · <a href="https://erasevid.com/cases?lang=ru&utm_source=github&utm_medium=readme_ru&utm_content=hero">11 реальных кейсов</a> · <a href="https://erasevid.com/workspace?lang=ru&utm_source=github&utm_medium=readme_ru&utm_content=hero">Онлайн-студия</a>
+</p>
+
 </div>
 
 ---
@@ -189,7 +193,28 @@ flowchart TB
 
 ---
 
+## Онлайн-версия: без развёртывания, сразу после регистрации
+
+Если нужно **обработать видео прямо сейчас** — без Docker и без оформления ключей Volcengine LAS / TOS — используйте **[EraseVid онлайн](https://erasevid.com/?lang=ru&utm_source=github&utm_medium=readme_ru&utm_content=section)**. Это та же кодовая база и те же AI-операторы, что и в открытой версии: зарегистрируйтесь и загружайте видео, размечайте водяные знаки и выгружайте результаты прямо из браузера.
+
+| | Свой сервер (этот репозиторий) | [EraseVid онлайн](https://erasevid.com/?lang=ru&utm_source=github&utm_medium=readme_ru&utm_content=section) |
+| :--- | :--- | :--- |
+| Запуск | `docker compose up -d` или `./start.sh` | Ничего не устанавливается, работает в браузере |
+| Ключи | Свои ключи LAS / TOS | Предоставляет платформа, оформлять не нужно |
+| Оплата | Напрямую облачному провайдеру | По факту использования, неудачные задачи возвращаются автоматически |
+| Данные | Исходники и результат остаются на вашем сервере | Загружаются на платформу для обработки |
+
+- 👉 **[Бесплатная регистрация и обработка видео](https://erasevid.com/?lang=ru&utm_source=github&utm_medium=readme_ru&utm_content=section)**
+- 🎬 **[11 реальных кейсов со сравнением до/после](https://erasevid.com/cases?lang=ru&utm_source=github&utm_medium=readme_ru&utm_content=section)**
+- 🖥️ **[Открыть онлайн-студию](https://erasevid.com/workspace?lang=ru&utm_source=github&utm_medium=readme_ru&utm_content=section)** (требуется вход)
+
+> Хотите сначала увидеть результат? Начните с [реальных кейсов](https://erasevid.com/cases?lang=ru&utm_source=github&utm_medium=readme_ru&utm_content=section); ниже описано развёртывание у себя.
+
+---
+
 ## Быстрый старт за 5 минут
+
+> Все четыре способа ниже относятся к **самостоятельному развёртыванию** открытой версии. Выберите подходящий под ваше окружение.
 
 ### Запуск в Docker (рекомендуется, без зависимостей)
 
@@ -291,11 +316,16 @@ npm --prefix frontend run build
 **В2: Как удалить фиксированный логотип канала во всех сериях, не задев оригинальные субтитры?**
 Выберите пресет **«Только логотип · Защита субтитров»** (`subtitle_protect=true`) либо выделите область логотипа фиксированной рамкой в разделе `/workspace#annotate` и примените шаблон ко всему пакету.
 
+**В6: Есть ли онлайн-версия, если не хочется разворачивать проект самому?**
+Да. [EraseVid онлайн](https://erasevid.com/?lang=ru&utm_source=github&utm_medium=readme_ru&utm_content=faq) работает на той же кодовой базе и тех же операторах: без развёртывания и без собственных облачных ключей — зарегистрируйтесь и загружайте видео. Оплата по факту использования, неудачные задачи возвращаются автоматически. Сначала можно посмотреть [реальные кейсы](https://erasevid.com/cases?lang=ru&utm_source=github&utm_medium=readme_ru&utm_content=faq); этот репозиторий нужен, если важны контроль данных или доработка кода.
+
 ---
 
 <div align="center">
 
 Если **CleanFrame** оказался полезен для ваших задач очистки и локализации видео, поддержите проект звездой (**Star**) на GitHub!
+
+[EraseVid онлайн](https://erasevid.com/?lang=ru&utm_source=github&utm_medium=readme_ru&utm_content=footer) · [Реальные кейсы](https://erasevid.com/cases?lang=ru&utm_source=github&utm_medium=readme_ru&utm_content=footer) · [Онлайн-студия](https://erasevid.com/workspace?lang=ru&utm_source=github&utm_medium=readme_ru&utm_content=footer) · [GitHub Issues](https://github.com/xuliang2024/video-watermark-remover/issues)
 
 **[Наверх](#cleanframe-净影)**
 

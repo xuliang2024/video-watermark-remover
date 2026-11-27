@@ -43,6 +43,10 @@
 
 <img src="../screenshots/01-hero-landing.png" alt="Página principal de CleanFrame y comparador antes/después" width="100%" />
 
+<p align="center">
+  🚀 <strong>¿Sin despliegue?</strong> <a href="https://erasevid.com/?lang=es&utm_source=github&utm_medium=readme_es&utm_content=hero"><strong>Probar EraseVid online</strong></a> · <a href="https://erasevid.com/cases?lang=es&utm_source=github&utm_medium=readme_es&utm_content=hero">11 casos reales</a> · <a href="https://erasevid.com/workspace?lang=es&utm_source=github&utm_medium=readme_es&utm_content=hero">Estudio online</a>
+</p>
+
 </div>
 
 ---
@@ -189,7 +193,28 @@ flowchart TB
 
 ---
 
+## Versión online: sin despliegue, lista al registrarte
+
+Si solo quieres **procesar un vídeo ahora mismo** sin instalar Docker ni solicitar credenciales de Volcengine LAS / TOS, usa **[EraseVid online](https://erasevid.com/?lang=es&utm_source=github&utm_medium=readme_es&utm_content=section)**: comparte código y operadores con esta edición open source; regístrate y procesa vídeos desde el navegador.
+
+| | Autoalojado (este repositorio) | [EraseVid online](https://erasevid.com/?lang=es&utm_source=github&utm_medium=readme_es&utm_content=section) |
+| :--- | :--- | :--- |
+| Puesta en marcha | `docker compose up -d` o `./start.sh` | Nada que instalar, funciona en el navegador |
+| Credenciales | Tus propias claves LAS / TOS | Las aporta la plataforma, sin trámites |
+| Facturación | Según tu proveedor cloud | Pago por uso; tareas fallidas reembolsadas automáticamente |
+| Datos | El material permanece en tu servidor | Se sube a la plataforma para su procesamiento |
+
+- 👉 **[Regístrate gratis y procesa un vídeo](https://erasevid.com/?lang=es&utm_source=github&utm_medium=readme_es&utm_content=section)**
+- 🎬 **[Ver 11 casos reales con comparativa antes/después](https://erasevid.com/cases?lang=es&utm_source=github&utm_medium=readme_es&utm_content=section)**
+- 🖥️ **[Abrir el estudio online](https://erasevid.com/workspace?lang=es&utm_source=github&utm_medium=readme_es&utm_content=section)** (requiere iniciar sesión)
+
+> ¿Prefieres ver resultados antes que código? Empieza por los [casos reales](https://erasevid.com/cases?lang=es&utm_source=github&utm_medium=readme_es&utm_content=section); a continuación se explica el despliegue autoalojado.
+
+---
+
 ## Inicio Rápido en 5 Minutos
+
+> Las cuatro opciones siguientes corresponden al **autoalojado** de la edición open source; elige la que mejor encaje con tu entorno.
 
 ### Ejecutar con Docker (recomendado, sin dependencias)
 
@@ -291,11 +316,16 @@ Sí. Con `CLEANFRAME_EXECUTION_MODE=auto`, CleanFrame activa automáticamente el
 **P2: ¿Cómo elimino un logo fijo en toda una serie sin borrar los subtítulos originales?**
 Selecciona el preajuste **«Solo Logo · Proteger Subtítulos»** (`subtitle_protect=true`) o dibuja un recuadro fijo sobre el logo en `/workspace#annotate` y guárdalo como plantilla para todo el lote.
 
+**P6: ¿Existe una versión online si no quiero autoalojar el proyecto?**
+Sí. [EraseVid online](https://erasevid.com/?lang=es&utm_source=github&utm_medium=readme_es&utm_content=faq) utiliza el mismo código y los mismos operadores, sin despliegue ni credenciales propias: regístrate y empieza a subir vídeos. El pago es por uso y las tareas fallidas se reembolsan automáticamente. Puedes revisar primero los [casos reales](https://erasevid.com/cases?lang=es&utm_source=github&utm_medium=readme_es&utm_content=faq); usa este repositorio si necesitas controlar los datos o ampliar el código.
+
 ---
 
 <div align="center">
 
 Si **CleanFrame** impulsa tu flujo de limpieza o localización de video, ¡apóyanos dejando una **Star** en GitHub!
+
+[EraseVid online](https://erasevid.com/?lang=es&utm_source=github&utm_medium=readme_es&utm_content=footer) · [Casos reales](https://erasevid.com/cases?lang=es&utm_source=github&utm_medium=readme_es&utm_content=footer) · [Estudio online](https://erasevid.com/workspace?lang=es&utm_source=github&utm_medium=readme_es&utm_content=footer) · [GitHub Issues](https://github.com/xuliang2024/video-watermark-remover/issues)
 
 **[Volver arriba](#cleanframe-净影)**
 

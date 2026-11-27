@@ -45,6 +45,10 @@
 
 <img src="./docs/screenshots/01-hero-landing.png" alt="净影 CleanFrame 产品首页与去水印前后对比舞台" width="100%" />
 
+<p align="center">
+  🚀 <strong>不想部署？</strong> <a href="https://erasevid.com/?lang=zh-CN&utm_source=github&utm_medium=readme_zh&utm_content=hero"><strong>立即在线体验 EraseVid</strong></a> · <a href="https://erasevid.com/cases?lang=zh-CN&utm_source=github&utm_medium=readme_zh&utm_content=hero">11 个真实修复案例</a> · <a href="https://erasevid.com/workspace?lang=zh-CN&utm_source=github&utm_medium=readme_zh&utm_content=hero">在线工作台</a>
+</p>
+
 </div>
 
 ---
@@ -254,7 +258,30 @@ video-watermark-remover/
 
 ---
 
+## 在线版：无需部署，注册即用
+
+如果你只是想**马上处理一段视频**，不想装 Docker、也不想去申请火山引擎 LAS / TOS 凭证，可以直接使用 **[EraseVid 在线版](https://erasevid.com/?lang=zh-CN&utm_source=github&utm_medium=readme_zh&utm_content=section)**：与开源版基于同一套代码与算子，注册后在浏览器里就能上传视频、框选水印、批量出片。
+
+| | 开源自托管（本仓库） | [EraseVid 在线版](https://erasevid.com/?lang=zh-CN&utm_source=github&utm_medium=readme_zh&utm_content=section) |
+| :--- | :--- | :--- |
+| 部署 | `docker compose up -d` 或 `./start.sh` | 无需部署，浏览器打开即用 |
+| 云凭证 | 需自备火山引擎 LAS / TOS | 平台统付，无需自行申请 |
+| 计费 | 按云厂商账单自行结算 | 按量计费，失败任务自动全额退费 |
+| 数据 | 素材与成片留在自己的服务器 | 上传至平台处理 |
+| 适合 | 二次开发、内网合规、数据不出境 | 想立刻出片、不想维护凭证与算力 |
+
+- 👉 **[免费注册，在线处理视频](https://erasevid.com/?lang=zh-CN&utm_source=github&utm_medium=readme_zh&utm_content=section)**
+- 🎬 **[查看 11 个真实修复案例（去水印前后片段对比）](https://erasevid.com/cases?lang=zh-CN&utm_source=github&utm_medium=readme_zh&utm_content=section)**
+- 🖥️ **[进入在线工作台](https://erasevid.com/workspace?lang=zh-CN&utm_source=github&utm_medium=readme_zh&utm_content=section)**（登录后使用）
+- 💬 [提交问题或建议](https://github.com/xuliang2024/video-watermark-remover/issues)
+
+> 想先看效果再看代码？从 [真实案例](https://erasevid.com/cases?lang=zh-CN&utm_source=github&utm_medium=readme_zh&utm_content=section) 开始；下面继续介绍开源自托管的部署方式。
+
+---
+
 ## 5 分钟快速开始
+
+> 以下四种方式均为 **开源自托管** 部署，按环境任选其一；不想部署请见上一节「在线版：无需部署，注册即用」。
 
 ### 方式一：Docker Compose 启动（推荐，零依赖）
 
@@ -489,6 +516,9 @@ npm --prefix frontend run build
 **Q5：支持去除哪些类型的视频水印与内嵌字幕？**
 无论是**短视频平台角标**（抖音、快手、TikTok、Instagram Reels、YouTube Shorts）、**AI 视频生成水印**（OpenAI Sora、Runway、Kling 可灵、Veo、Jimeng 即梦）、**影视电视台标与跑马灯**，还是**烧录进画面的硬编码字幕（Hardsub / 内嵌字幕）**，均可通过「VLM 精准识别」或「1000×1000 固定框时间轴模板」进行像素级时空背景重绘，不裁剪画面、不伤原片音轨。
 
+**Q6：不想自己部署，有没有可以直接用的在线版本？**
+有。[EraseVid 在线版](https://erasevid.com/?lang=zh-CN&utm_source=github&utm_medium=readme_zh&utm_content=faq) 与开源版基于同一套代码与算子，免部署、免自备云凭证，注册后即可上传视频处理，按量计费且失败任务自动全额退费。想先看效果可浏览 [真实修复案例](https://erasevid.com/cases?lang=zh-CN&utm_source=github&utm_medium=readme_zh&utm_content=faq)；如果更看重素材不出内网或需要二次开发，再用本仓库自托管。
+
 ---
 
 ## 典型应用场景与检索索引
@@ -511,6 +541,8 @@ npm --prefix frontend run build
 <div align="center">
 
 如果 **净影 CleanFrame** 对你的视频去水印或内容出海工作流有所帮助，欢迎点亮右上角 **Star** 支持项目持续迭代！
+
+[EraseVid 在线版](https://erasevid.com/?lang=zh-CN&utm_source=github&utm_medium=readme_zh&utm_content=footer) · [真实修复案例](https://erasevid.com/cases?lang=zh-CN&utm_source=github&utm_medium=readme_zh&utm_content=footer) · [在线工作台](https://erasevid.com/workspace?lang=zh-CN&utm_source=github&utm_medium=readme_zh&utm_content=footer) · [GitHub Issues](https://github.com/xuliang2024/video-watermark-remover/issues)
 
 **[返回顶部](#净影-cleanframe--ai-视频去水印--视频去字幕工作台)**
 

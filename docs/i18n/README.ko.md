@@ -45,6 +45,10 @@
 
 <img src="../screenshots/01-hero-landing.png" alt="CleanFrame 랜딩 페이지 및 워터마크 제거 전후 비교 스테이지" width="100%" />
 
+<p align="center">
+  🚀 <strong>배포 없이 쓰고 싶다면</strong> <a href="https://erasevid.com/?lang=ko&utm_source=github&utm_medium=readme_ko&utm_content=hero"><strong>EraseVid 온라인 버전 체험</strong></a> · <a href="https://erasevid.com/cases?lang=ko&utm_source=github&utm_medium=readme_ko&utm_content=hero">실제 사례 11건</a> · <a href="https://erasevid.com/workspace?lang=ko&utm_source=github&utm_medium=readme_ko&utm_content=hero">온라인 스튜디오</a>
+</p>
+
 </div>
 
 ---
@@ -197,7 +201,28 @@ flowchart TB
 
 ---
 
+## 온라인 버전: 배포 없이 가입 후 바로 사용
+
+Docker 설치나 Volcengine LAS / TOS 인증 정보 없이 **지금 바로 영상을 처리하고 싶다면** **[EraseVid 온라인 버전](https://erasevid.com/?lang=ko&utm_source=github&utm_medium=readme_ko&utm_content=section)**을 이용하세요. 오픈소스 버전과 동일한 코드베이스와 AI 연산자를 사용하며, 가입 후 브라우저에서 바로 업로드·워터마크 지정·일괄 출력이 가능합니다.
+
+| | 셀프 호스팅 (이 저장소) | [EraseVid 온라인 버전](https://erasevid.com/?lang=ko&utm_source=github&utm_medium=readme_ko&utm_content=section) |
+| :--- | :--- | :--- |
+| 설치 | `docker compose up -d` 또는 `./start.sh` | 설치 불필요, 브라우저에서 바로 사용 |
+| 인증 정보 | 직접 발급한 LAS / TOS 키 | 플랫폼이 제공, 별도 신청 불필요 |
+| 요금 | 클라우드 사업자에 직접 결제 | 사용량 기준, 실패 작업 자동 전액 환불 |
+| 데이터 | 원본과 결과물이 내 서버에 보관 | 처리를 위해 플랫폼에 업로드 |
+
+- 👉 **[무료 가입하고 영상 처리하기](https://erasevid.com/?lang=ko&utm_source=github&utm_medium=readme_ko&utm_content=section)**
+- 🎬 **[전후 비교가 포함된 실제 사례 11건 보기](https://erasevid.com/cases?lang=ko&utm_source=github&utm_medium=readme_ko&utm_content=section)**
+- 🖥️ **[온라인 스튜디오 열기](https://erasevid.com/workspace?lang=ko&utm_source=github&utm_medium=readme_ko&utm_content=section)** (로그인 필요)
+
+> 결과를 먼저 보고 싶다면 [실제 사례](https://erasevid.com/cases?lang=ko&utm_source=github&utm_medium=readme_ko&utm_content=section)부터 확인하세요. 아래에는 셀프 호스팅 설치 방법을 정리했습니다.
+
+---
+
 ## 5분 빠른 시작
+
+> 아래 네 가지 방법은 모두 **오픈소스 버전의 셀프 호스팅**입니다. 환경에 맞는 것을 선택하세요.
 
 ### Docker로 실행 (권장, 의존성 없음)
 
@@ -299,11 +324,16 @@ npm --prefix frontend run build
 **Q2: 원본 대사 자막은 남기고 우측 상단 방송 로고만 지우려면 어떻게 하나요?**
 「로고만 제거 · 자막 보호」 프리셋(`subtitle_protect=true`)을 선택하거나, 「영역 지정」 화면에서 로고 위치에만 고정 박스를 그려 템플릿으로 적용하면 박스 바깥 영역은 전혀 건드리지 않습니다.
 
+**Q6: 직접 배포하지 않고 쓸 수 있는 온라인 버전이 있나요?**
+네. [EraseVid 온라인 버전](https://erasevid.com/?lang=ko&utm_source=github&utm_medium=readme_ko&utm_content=faq)은 이 저장소와 동일한 코드베이스와 연산자를 사용하며, 배포나 별도 클라우드 인증 정보 없이 가입만 하면 바로 영상을 처리할 수 있습니다. 사용량 기준 과금이며 실패 작업은 자동으로 전액 환불됩니다. 결과 품질은 [실제 사례](https://erasevid.com/cases?lang=ko&utm_source=github&utm_medium=readme_ko&utm_content=faq)에서 먼저 확인할 수 있고, 데이터를 직접 관리하거나 코드를 확장하려면 이 저장소를 사용하세요.
+
 ---
 
 <div align="center">
 
 **CleanFrame**이 도움이 되셨다면 우측 상단 **Star**를 눌러 프로젝트를 응원해 주세요!
+
+[EraseVid 온라인 버전](https://erasevid.com/?lang=ko&utm_source=github&utm_medium=readme_ko&utm_content=footer) · [실제 사례](https://erasevid.com/cases?lang=ko&utm_source=github&utm_medium=readme_ko&utm_content=footer) · [온라인 스튜디오](https://erasevid.com/workspace?lang=ko&utm_source=github&utm_medium=readme_ko&utm_content=footer) · [GitHub Issues](https://github.com/xuliang2024/video-watermark-remover/issues)
 
 **[맨 위로 이동](#정영-cleanframe-净影)**
 
