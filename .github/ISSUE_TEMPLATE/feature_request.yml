@@ -1,0 +1,44 @@
+name: Feature request
+description: Suggest a capability, platform, or workflow the studio should support.
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Describe the workflow you run today and where it breaks down. Concrete beats abstract.
+      placeholder: |
+        We process 60-80 episodes per season, and every episode needs the same logo area removed,
+        but the logo shifts position between the first 10 seconds and the rest of the episode.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like it to do?
+    validations:
+      required: true
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: How are you working around it today?
+    validations:
+      required: false
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Which part of the product does this touch?
+      options:
+        - Canvas annotation / region templates
+        - Batch scheduling and queueing
+        - Inpainting operators
+        - Translation and dubbing
+        - Billing and cost estimation
+        - Self-hosting / deployment
+        - Other
+    validations:
+      required: false

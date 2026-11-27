@@ -1,0 +1,83 @@
+name: Bug report
+description: Install failure, crash, or wrong output.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this. **Chinese or English are both fine.**
+
+        If it is an install or startup problem, please include the health check output below —
+        `curl -s http://127.0.0.1:8000/api/health` — it answers most deployment questions at once.
+
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: How are you running it?
+      options:
+        - Docker Compose
+        - Source, ./start.sh
+        - Source, manual (uvicorn + vite dev)
+        - Hosted cloud (erasevid.com)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Execution mode
+      description: Mock mode simulates the whole pipeline locally without calling any cloud provider.
+      options:
+        - mock (no credentials configured)
+        - live (Volcengine LAS + TOS configured)
+        - not sure
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: OS and architecture
+      placeholder: macOS 15 arm64 / Ubuntu 24.04 x86_64 / Windows 11 + WSL2
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you expected, and what you got instead. Screenshots of the canvas or the output video help a lot.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Upload a 30s 1080p clip
+        2. Draw one box over the burned-in subtitle area
+        3. Submit, wait for the batch to finish
+        4. Output still shows the subtitle
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Health check output plus the last lines of the container or server log. Strip API keys first.
+      render: shell
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues for the same problem.
+          required: true
+        - label: I removed API keys and personal footage details from anything pasted above.
+          required: true
