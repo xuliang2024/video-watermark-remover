@@ -1,0 +1,27 @@
+services:
+  cleanframe:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cleanframe:latest
+    container_name: cleanframe
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # `auto` means live when Volcengine credentials are present, local mock otherwise.
+      # Credentials entered at /workspace#settings are stored in the database and
+      # survive restarts, so no .env file is required to get started.
+      CLEANFRAME_EXECUTION_MODE: ${CLEANFRAME_EXECUTION_MODE:-auto}
+      CLEANFRAME_PUBLIC_BASE_URL: ${CLEANFRAME_PUBLIC_BASE_URL:-http://127.0.0.1:8000}
+      CLEANFRAME_SCHEDULER_ENABLED: ${CLEANFRAME_SCHEDULER_ENABLED:-true}
+      TZ: ${TZ:-UTC}
+    volumes:
+      # SQLite database plus uploaded media, thumbnails and rendered outputs.
+      - ./data:/app/backend/storage
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/api/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 25s
+      retries: 3
