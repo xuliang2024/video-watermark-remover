@@ -25,6 +25,7 @@
 </p>
 
 <p align="center">
+  <a href="https://erasevid.com/?lang=ru&utm_source=github&utm_medium=readme_ru&utm_content=toc"><strong>☁ Попробовать онлайн</strong></a> ·
   <a href="#о-проекте">О проекте</a> ·
   <a href="#ключевые-возможности">Возможности</a> ·
   <a href="#галерея-интерфейса-и-результатов">Скриншоты</a> ·
@@ -44,10 +45,15 @@
 <img src="../screenshots/01-hero-landing.png" alt="Главная страница CleanFrame и интерактивное сравнение до/после" width="100%" />
 
 <p align="center">
-  🚀 <strong>Не хотите разворачивать?</strong> <a href="https://erasevid.com/?lang=ru&utm_source=github&utm_medium=readme_ru&utm_content=hero"><strong>Попробовать EraseVid онлайн</strong></a> · <a href="https://erasevid.com/cases?lang=ru&utm_source=github&utm_medium=readme_ru&utm_content=hero">11 реальных кейсов</a> · <a href="https://erasevid.com/workspace?lang=ru&utm_source=github&utm_medium=readme_ru&utm_content=hero">Онлайн-студия</a>
+  <a href="https://erasevid.com/?lang=ru&utm_source=github&utm_medium=readme_ru&utm_content=hero"><img src="https://img.shields.io/badge/Try_EraseVid_Online_Free-10B981?style=for-the-badge" alt="Try EraseVid online" /></a>
+  <a href="https://erasevid.com/cases?lang=ru&utm_source=github&utm_medium=readme_ru&utm_content=hero"><img src="https://img.shields.io/badge/11_Real_Case_Studies-2563EB?style=for-the-badge" alt="11 real case studies" /></a><br/>
+  <strong>Без развёртывания, Docker и облачных ключей — зарегистрируйтесь и работайте</strong> · <a href="https://erasevid.com/workspace?lang=ru&utm_source=github&utm_medium=readme_ru&utm_content=hero">Открыть студию →</a>
 </p>
 
 </div>
+
+> [!IMPORTANT]
+> **Ни Docker, ни ключей Volcengine.** **[EraseVid онлайн](https://erasevid.com/?lang=ru&utm_source=github&utm_medium=readme_ru&utm_content=alert)** — та же кодовая база и те же операторы: зарегистрируйтесь и сразу обрабатывайте видео. Оплата по факту, неудачные задачи возвращаются автоматически. [11 реальных кейсов →](https://erasevid.com/cases?lang=ru&utm_source=github&utm_medium=readme_ru&utm_content=alert)
 
 ---
 
@@ -193,11 +199,13 @@ flowchart TB
 
 ---
 
-## Онлайн-версия: без развёртывания, сразу после регистрации
+## ☁️ Онлайн-версия: без развёртывания, сразу после регистрации
+
+> **Без Docker · Без облачных ключей · Сразу после регистрации · Автоматический возврат**
 
 Если нужно **обработать видео прямо сейчас** — без Docker и без оформления ключей Volcengine LAS / TOS — используйте **[EraseVid онлайн](https://erasevid.com/?lang=ru&utm_source=github&utm_medium=readme_ru&utm_content=section)**. Это та же кодовая база и те же AI-операторы, что и в открытой версии: зарегистрируйтесь и загружайте видео, размечайте водяные знаки и выгружайте результаты прямо из браузера.
 
-| | Свой сервер (этот репозиторий) | [EraseVid онлайн](https://erasevid.com/?lang=ru&utm_source=github&utm_medium=readme_ru&utm_content=section) |
+| | Свой сервер (этот репозиторий) | **[EraseVid онлайн](https://erasevid.com/?lang=ru&utm_source=github&utm_medium=readme_ru&utm_content=section) · Рекомендуем** |
 | :--- | :--- | :--- |
 | Запуск | `docker compose up -d` или `./start.sh` | Ничего не устанавливается, работает в браузере |
 | Ключи | Свои ключи LAS / TOS | Предоставляет платформа, оформлять не нужно |

@@ -25,6 +25,7 @@
 </p>
 
 <p align="center">
+  <a href="https://erasevid.com/?lang=en&utm_source=github&utm_medium=readme_en&utm_content=toc"><strong>☁ Try Online</strong></a> ·
   <a href="#overview">Overview</a> ·
   <a href="#key-features">Key Features</a> ·
   <a href="#live-ui--preview-gallery">Preview Gallery</a> ·
@@ -44,10 +45,15 @@
 <img src="../screenshots/01-hero-landing.png" alt="CleanFrame Landing Page & Before/After Watermark Erasure Stage" width="100%" />
 
 <p align="center">
-  🚀 <strong>No setup?</strong> <a href="https://erasevid.com/?lang=en&utm_source=github&utm_medium=readme_en&utm_content=hero"><strong>Try EraseVid online</strong></a> · <a href="https://erasevid.com/cases?lang=en&utm_source=github&utm_medium=readme_en&utm_content=hero">11 real before/after cases</a> · <a href="https://erasevid.com/workspace?lang=en&utm_source=github&utm_medium=readme_en&utm_content=hero">Open the studio</a>
+  <a href="https://erasevid.com/?lang=en&utm_source=github&utm_medium=readme_en&utm_content=hero"><img src="https://img.shields.io/badge/Try_EraseVid_Online_Free-10B981?style=for-the-badge" alt="Try EraseVid online" /></a>
+  <a href="https://erasevid.com/cases?lang=en&utm_source=github&utm_medium=readme_en&utm_content=hero"><img src="https://img.shields.io/badge/11_Real_Case_Studies-2563EB?style=for-the-badge" alt="11 real case studies" /></a><br/>
+  <strong>No setup — no Docker, no cloud keys, sign up and go</strong> · <a href="https://erasevid.com/workspace?lang=en&utm_source=github&utm_medium=readme_en&utm_content=hero">Open the studio →</a>
 </p>
 
 </div>
+
+> [!IMPORTANT]
+> **No Docker and no Volcengine credentials?** Use **[EraseVid Hosted](https://erasevid.com/?lang=en&utm_source=github&utm_medium=readme_en&utm_content=alert)** — same codebase and AI operators, sign up and start processing videos right away. Pay as you go, failed tasks refunded automatically. [See 11 real before/after cases →](https://erasevid.com/cases?lang=en&utm_source=github&utm_medium=readme_en&utm_content=alert)
 
 ---
 
@@ -205,11 +211,13 @@ flowchart TB
 
 ---
 
-## Try the Hosted Version (No Setup)
+## ☁️ Try the Hosted Version (No Setup)
+
+> **No Docker · No cloud keys · Sign up and go · Failed tasks refunded automatically**
 
 If you just want to **clean a video right now** — no Docker, no Volcengine LAS / TOS account to apply for — use **[EraseVid Hosted](https://erasevid.com/?lang=en&utm_source=github&utm_medium=readme_en&utm_content=section)**. It is built on the same codebase and the same AI operators as this repository: sign up, then upload, annotate watermarks and export batches straight from your browser.
 
-| | Self-hosted (this repo) | [EraseVid Hosted](https://erasevid.com/?lang=en&utm_source=github&utm_medium=readme_en&utm_content=section) |
+| | Self-hosted (this repo) | **[EraseVid Hosted](https://erasevid.com/?lang=en&utm_source=github&utm_medium=readme_en&utm_content=section) · Recommended** |
 | :--- | :--- | :--- |
 | Setup | `docker compose up -d` or `./start.sh` | Nothing to install — works in the browser |
 | Cloud credentials | Your own Volcengine LAS / TOS keys | Covered by the platform, nothing to apply for |

@@ -27,6 +27,7 @@
 </p>
 
 <p align="center">
+  <a href="https://erasevid.com/?lang=ja&utm_source=github&utm_medium=readme_ja&utm_content=toc"><strong>☁ オンラインで試す</strong></a> ·
   <a href="#プロジェクト概要">概要</a> ·
   <a href="#主な機能">主な機能</a> ·
   <a href="#画面プレビュー">画面プレビュー</a> ·
@@ -46,10 +47,15 @@
 <img src="../screenshots/01-hero-landing.png" alt="CleanFrame ランディングページと透かし消去ビフォーアフター比較" width="100%" />
 
 <p align="center">
-  🚀 <strong>デプロイ不要で使いたい方へ</strong> <a href="https://erasevid.com/?lang=ja&utm_source=github&utm_medium=readme_ja&utm_content=hero"><strong>EraseVid オンライン版を試す</strong></a> · <a href="https://erasevid.com/cases?lang=ja&utm_source=github&utm_medium=readme_ja&utm_content=hero">11 件の実際の事例</a> · <a href="https://erasevid.com/workspace?lang=ja&utm_source=github&utm_medium=readme_ja&utm_content=hero">オンラインスタジオ</a>
+  <a href="https://erasevid.com/?lang=ja&utm_source=github&utm_medium=readme_ja&utm_content=hero"><img src="https://img.shields.io/badge/Try_EraseVid_Online_Free-10B981?style=for-the-badge" alt="Try EraseVid online" /></a>
+  <a href="https://erasevid.com/cases?lang=ja&utm_source=github&utm_medium=readme_ja&utm_content=hero"><img src="https://img.shields.io/badge/11_Real_Case_Studies-2563EB?style=for-the-badge" alt="11 real case studies" /></a><br/>
+  <strong>デプロイ不要・Docker 不要・認証情報不要、登録してすぐ</strong> · <a href="https://erasevid.com/workspace?lang=ja&utm_source=github&utm_medium=readme_ja&utm_content=hero">オンラインスタジオ →</a>
 </p>
 
 </div>
+
+> [!IMPORTANT]
+> **Docker も火山引擎の認証情報も不要。** **[EraseVid オンライン版](https://erasevid.com/?lang=ja&utm_source=github&utm_medium=readme_ja&utm_content=alert)** なら同一コード・同一演算子で、登録後すぐに動画を処理できます。従量課金、失敗タスクは自動全額返金。[実際の事例 11 件を見る →](https://erasevid.com/cases?lang=ja&utm_source=github&utm_medium=readme_ja&utm_content=alert)
 
 ---
 
@@ -201,11 +207,13 @@ flowchart TB
 
 ---
 
-## オンライン版：デプロイ不要、登録してすぐ利用
+## ☁️ オンライン版：デプロイ不要、登録してすぐ利用
+
+> **Docker 不要 · 認証情報不要 · 登録してすぐ · 失敗タスク自動全額返金**
 
 Docker の導入や火山引擎 LAS / TOS の認証情報取得をせずに**今すぐ動画を処理したい**場合は、**[EraseVid オンライン版](https://erasevid.com/?lang=ja&utm_source=github&utm_medium=readme_ja&utm_content=section)** をご利用ください。オープンソース版と同じコードベース・同じ AI 演算子で動作し、登録後すぐにブラウザから動画のアップロード、透かしの範囲指定、一括出力ができます。
 
-| | セルフホスト（本リポジトリ） | [EraseVid オンライン版](https://erasevid.com/?lang=ja&utm_source=github&utm_medium=readme_ja&utm_content=section) |
+| | セルフホスト（本リポジトリ） | **[EraseVid オンライン版](https://erasevid.com/?lang=ja&utm_source=github&utm_medium=readme_ja&utm_content=section) · おすすめ** |
 | :--- | :--- | :--- |
 | 導入 | `docker compose up -d` または `./start.sh` | インストール不要、ブラウザで即利用 |
 | 認証情報 | 自身で LAS / TOS を用意 | プラットフォーム側で用意、申請不要 |

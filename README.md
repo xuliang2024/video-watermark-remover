@@ -27,6 +27,7 @@
 </p>
 
 <p align="center">
+  <a href="https://erasevid.com/?lang=zh-CN&utm_source=github&utm_medium=readme_zh&utm_content=toc"><strong>☁ 在线体验</strong></a> ·
   <a href="#项目简介">项目简介</a> ·
   <a href="#核心能力亮点">核心亮点</a> ·
   <a href="#界面与效果预览">界面预览</a> ·
@@ -46,10 +47,15 @@
 <img src="./docs/screenshots/01-hero-landing.png" alt="净影 CleanFrame 产品首页与去水印前后对比舞台" width="100%" />
 
 <p align="center">
-  🚀 <strong>不想部署？</strong> <a href="https://erasevid.com/?lang=zh-CN&utm_source=github&utm_medium=readme_zh&utm_content=hero"><strong>立即在线体验 EraseVid</strong></a> · <a href="https://erasevid.com/cases?lang=zh-CN&utm_source=github&utm_medium=readme_zh&utm_content=hero">11 个真实修复案例</a> · <a href="https://erasevid.com/workspace?lang=zh-CN&utm_source=github&utm_medium=readme_zh&utm_content=hero">在线工作台</a>
+  <a href="https://erasevid.com/?lang=zh-CN&utm_source=github&utm_medium=readme_zh&utm_content=hero"><img src="https://img.shields.io/badge/Try_EraseVid_Online_Free-10B981?style=for-the-badge" alt="Try EraseVid online" /></a>
+  <a href="https://erasevid.com/cases?lang=zh-CN&utm_source=github&utm_medium=readme_zh&utm_content=hero"><img src="https://img.shields.io/badge/11_Real_Case_Studies-2563EB?style=for-the-badge" alt="11 real case studies" /></a><br/>
+  <strong>不想部署？在线版免 Docker、免云凭证，注册即用</strong> · <a href="https://erasevid.com/workspace?lang=zh-CN&utm_source=github&utm_medium=readme_zh&utm_content=hero">在线工作台 →</a>
 </p>
 
 </div>
+
+> [!IMPORTANT]
+> **不想装 Docker、也不想申请火山引擎凭证？** 直接用 **[EraseVid 在线版](https://erasevid.com/?lang=zh-CN&utm_source=github&utm_medium=readme_zh&utm_content=alert)** —— 与开源版同一套代码与算子，注册即可上传视频、框选水印、批量出片；按量计费，失败任务自动全额退费。[先看 11 个真实修复案例 →](https://erasevid.com/cases?lang=zh-CN&utm_source=github&utm_medium=readme_zh&utm_content=alert)
 
 ---
 
@@ -258,11 +264,13 @@ video-watermark-remover/
 
 ---
 
-## 在线版：无需部署，注册即用
+## ☁️ 在线版：无需部署，注册即用
+
+> **免 Docker · 免云凭证 · 注册即用 · 失败任务自动全额退费**
 
 如果你只是想**马上处理一段视频**，不想装 Docker、也不想去申请火山引擎 LAS / TOS 凭证，可以直接使用 **[EraseVid 在线版](https://erasevid.com/?lang=zh-CN&utm_source=github&utm_medium=readme_zh&utm_content=section)**：与开源版基于同一套代码与算子，注册后在浏览器里就能上传视频、框选水印、批量出片。
 
-| | 开源自托管（本仓库） | [EraseVid 在线版](https://erasevid.com/?lang=zh-CN&utm_source=github&utm_medium=readme_zh&utm_content=section) |
+| | 开源自托管（本仓库） | **[EraseVid 在线版](https://erasevid.com/?lang=zh-CN&utm_source=github&utm_medium=readme_zh&utm_content=section) · 推荐** |
 | :--- | :--- | :--- |
 | 部署 | `docker compose up -d` 或 `./start.sh` | 无需部署，浏览器打开即用 |
 | 云凭证 | 需自备火山引擎 LAS / TOS | 平台统付，无需自行申请 |

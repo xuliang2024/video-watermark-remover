@@ -27,6 +27,7 @@
 </p>
 
 <p align="center">
+  <a href="https://erasevid.com/?lang=ko&utm_source=github&utm_medium=readme_ko&utm_content=toc"><strong>☁ 온라인 체험</strong></a> ·
   <a href="#프로젝트-소개">소개</a> ·
   <a href="#핵심-기능">핵심 기능</a> ·
   <a href="#화면-및-결과-미리보기">화면 미리보기</a> ·
@@ -46,10 +47,15 @@
 <img src="../screenshots/01-hero-landing.png" alt="CleanFrame 랜딩 페이지 및 워터마크 제거 전후 비교 스테이지" width="100%" />
 
 <p align="center">
-  🚀 <strong>배포 없이 쓰고 싶다면</strong> <a href="https://erasevid.com/?lang=ko&utm_source=github&utm_medium=readme_ko&utm_content=hero"><strong>EraseVid 온라인 버전 체험</strong></a> · <a href="https://erasevid.com/cases?lang=ko&utm_source=github&utm_medium=readme_ko&utm_content=hero">실제 사례 11건</a> · <a href="https://erasevid.com/workspace?lang=ko&utm_source=github&utm_medium=readme_ko&utm_content=hero">온라인 스튜디오</a>
+  <a href="https://erasevid.com/?lang=ko&utm_source=github&utm_medium=readme_ko&utm_content=hero"><img src="https://img.shields.io/badge/Try_EraseVid_Online_Free-10B981?style=for-the-badge" alt="Try EraseVid online" /></a>
+  <a href="https://erasevid.com/cases?lang=ko&utm_source=github&utm_medium=readme_ko&utm_content=hero"><img src="https://img.shields.io/badge/11_Real_Case_Studies-2563EB?style=for-the-badge" alt="11 real case studies" /></a><br/>
+  <strong>배포 불필요 · Docker 불필요 · 클라우드 키 불필요, 가입 후 바로</strong> · <a href="https://erasevid.com/workspace?lang=ko&utm_source=github&utm_medium=readme_ko&utm_content=hero">온라인 스튜디오 →</a>
 </p>
 
 </div>
+
+> [!IMPORTANT]
+> **Docker 없이, Volcengine 인증 정보 없이.** **[EraseVid 온라인 버전](https://erasevid.com/?lang=ko&utm_source=github&utm_medium=readme_ko&utm_content=alert)**은 동일한 코드와 연산자를 사용하며 가입 후 바로 영상을 처리할 수 있습니다. 사용량 과금, 실패 작업 자동 전액 환불. [실제 사례 11건 보기 →](https://erasevid.com/cases?lang=ko&utm_source=github&utm_medium=readme_ko&utm_content=alert)
 
 ---
 
@@ -201,11 +207,13 @@ flowchart TB
 
 ---
 
-## 온라인 버전: 배포 없이 가입 후 바로 사용
+## ☁️ 온라인 버전: 배포 없이 가입 후 바로 사용
+
+> **Docker 불필요 · 클라우드 키 불필요 · 가입 후 바로 · 실패 작업 자동 전액 환불**
 
 Docker 설치나 Volcengine LAS / TOS 인증 정보 없이 **지금 바로 영상을 처리하고 싶다면** **[EraseVid 온라인 버전](https://erasevid.com/?lang=ko&utm_source=github&utm_medium=readme_ko&utm_content=section)**을 이용하세요. 오픈소스 버전과 동일한 코드베이스와 AI 연산자를 사용하며, 가입 후 브라우저에서 바로 업로드·워터마크 지정·일괄 출력이 가능합니다.
 
-| | 셀프 호스팅 (이 저장소) | [EraseVid 온라인 버전](https://erasevid.com/?lang=ko&utm_source=github&utm_medium=readme_ko&utm_content=section) |
+| | 셀프 호스팅 (이 저장소) | **[EraseVid 온라인 버전](https://erasevid.com/?lang=ko&utm_source=github&utm_medium=readme_ko&utm_content=section) · 추천** |
 | :--- | :--- | :--- |
 | 설치 | `docker compose up -d` 또는 `./start.sh` | 설치 불필요, 브라우저에서 바로 사용 |
 | 인증 정보 | 직접 발급한 LAS / TOS 키 | 플랫폼이 제공, 별도 신청 불필요 |

@@ -25,6 +25,7 @@
 </p>
 
 <p align="center">
+  <a href="https://erasevid.com/?lang=es&utm_source=github&utm_medium=readme_es&utm_content=toc"><strong>☁ Probar online</strong></a> ·
   <a href="#descripción-general">Descripción</a> ·
   <a href="#características-principales">Características</a> ·
   <a href="#galería-de-interfaz-y-resultados">Galería</a> ·
@@ -44,10 +45,15 @@
 <img src="../screenshots/01-hero-landing.png" alt="Página principal de CleanFrame y comparador antes/después" width="100%" />
 
 <p align="center">
-  🚀 <strong>¿Sin despliegue?</strong> <a href="https://erasevid.com/?lang=es&utm_source=github&utm_medium=readme_es&utm_content=hero"><strong>Probar EraseVid online</strong></a> · <a href="https://erasevid.com/cases?lang=es&utm_source=github&utm_medium=readme_es&utm_content=hero">11 casos reales</a> · <a href="https://erasevid.com/workspace?lang=es&utm_source=github&utm_medium=readme_es&utm_content=hero">Estudio online</a>
+  <a href="https://erasevid.com/?lang=es&utm_source=github&utm_medium=readme_es&utm_content=hero"><img src="https://img.shields.io/badge/Try_EraseVid_Online_Free-10B981?style=for-the-badge" alt="Try EraseVid online" /></a>
+  <a href="https://erasevid.com/cases?lang=es&utm_source=github&utm_medium=readme_es&utm_content=hero"><img src="https://img.shields.io/badge/11_Real_Case_Studies-2563EB?style=for-the-badge" alt="11 real case studies" /></a><br/>
+  <strong>Sin despliegue: sin Docker ni credenciales cloud, regístrate y empieza</strong> · <a href="https://erasevid.com/workspace?lang=es&utm_source=github&utm_medium=readme_es&utm_content=hero">Abrir el estudio →</a>
 </p>
 
 </div>
+
+> [!IMPORTANT]
+> **¿Sin Docker y sin credenciales de Volcengine?** Usa **[EraseVid online](https://erasevid.com/?lang=es&utm_source=github&utm_medium=readme_es&utm_content=alert)**: el mismo código y los mismos operadores, regístrate y procesa vídeos de inmediato. Pago por uso y reembolso automático de tareas fallidas. [Ver 11 casos reales →](https://erasevid.com/cases?lang=es&utm_source=github&utm_medium=readme_es&utm_content=alert)
 
 ---
 
@@ -193,11 +199,13 @@ flowchart TB
 
 ---
 
-## Versión online: sin despliegue, lista al registrarte
+## ☁️ Versión online: sin despliegue, lista al registrarte
+
+> **Sin Docker · Sin credenciales cloud · Registro inmediato · Reembolso automático**
 
 Si solo quieres **procesar un vídeo ahora mismo** sin instalar Docker ni solicitar credenciales de Volcengine LAS / TOS, usa **[EraseVid online](https://erasevid.com/?lang=es&utm_source=github&utm_medium=readme_es&utm_content=section)**: comparte código y operadores con esta edición open source; regístrate y procesa vídeos desde el navegador.
 
-| | Autoalojado (este repositorio) | [EraseVid online](https://erasevid.com/?lang=es&utm_source=github&utm_medium=readme_es&utm_content=section) |
+| | Autoalojado (este repositorio) | **[EraseVid online](https://erasevid.com/?lang=es&utm_source=github&utm_medium=readme_es&utm_content=section) · Recomendado** |
 | :--- | :--- | :--- |
 | Puesta en marcha | `docker compose up -d` o `./start.sh` | Nada que instalar, funciona en el navegador |
 | Credenciales | Tus propias claves LAS / TOS | Las aporta la plataforma, sin trámites |
